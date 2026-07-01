@@ -1,0 +1,92 @@
+{
+  "providers": [
+    {
+      "id": "AzureDevOps",
+      "name": "Azure DevOps",
+      "icon": "AD",
+      "color": "#0078D4",
+      "description": "Create work items in Azure DevOps boards",
+      "available": true,
+      "fields": [
+        {
+          "key": "organizationUrl",
+          "label": "Organization URL",
+          "type": "url",
+          "required": true,
+          "placeholder": "https://dev.azure.com/your-org",
+          "helpText": "Your Azure DevOps organization URL"
+        },
+        {
+          "key": "accessToken",
+          "label": "Personal Access Token (PAT)",
+          "type": "password",
+          "required": true,
+          "placeholder": "Paste your PAT here",
+          "helpText": "Required scopes: Work Items (Read & Write), Project (Read)",
+          "helpLink": "https://learn.microsoft.com/en-us/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate"
+        },
+        {
+          "key": "patExpiryDate",
+          "label": "PAT Expiry Date",
+          "type": "date",
+          "required": false,
+          "helpText": "We'll notify you before it expires so you can regenerate without interruption"
+        }
+      ]
+    },
+    {
+      "id": "Jira",
+      "name": "Jira",
+      "icon": "J",
+      "color": "#0052CC",
+      "description": "Export issues to Jira projects",
+      "available": false,
+      "fields": [
+        {
+          "key": "domain",
+          "label": "Jira Domain",
+          "type": "url",
+          "required": true,
+          "placeholder": "https://your-company.atlassian.net",
+          "helpText": "Your Atlassian Jira instance URL"
+        },
+        {
+          "key": "email",
+          "label": "Email",
+          "type": "email",
+          "required": true,
+          "placeholder": "your-email@company.com",
+          "helpText": "The email associated with your Atlassian account"
+        },
+        {
+          "key": "apiToken",
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "placeholder": "Paste your Jira API token",
+          "helpText": "Generate from your Atlassian account settings",
+          "helpLink": "https://id.atlassian.com/manage-profile/security/api-tokens"
+        }
+      ]
+    },
+    {
+      "id": "Linear",
+      "name": "Linear",
+      "icon": "L",
+      "color": "#5E6AD2",
+      "description": "Create issues in Linear teams",
+      "available": false,
+      "fields": [
+        {
+          "key": "apiKey",
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "placeholder": "lin_api_...",
+          "helpText": "Generate from Linear Settings → API",
+          "helpLink": "https://linear.app/settings/api"
+        }
+      ]
+    }
+  ]
+}

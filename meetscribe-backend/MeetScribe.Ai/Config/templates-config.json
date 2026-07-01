@@ -1,0 +1,754 @@
+{
+  "section_types": {
+    "text": {
+      "display": "paragraph",
+      "prompt_instruction": "Write a concise 2-3 sentence summary that captures the meeting's purpose, key outcomes, and overall direction. PRESERVE specific numbers, amounts, dates, and figures (e.g., '50 lakh budget', 'August 1 deadline'). Do NOT list individual items — those belong in other sections.",
+      "fields": ["content"],
+      "examples": {
+        "good": [
+          "The team discussed the Q3 roadmap and agreed to prioritize the payment module over the reporting dashboard. Three blockers were identified and assigned owners with deadlines."
+        ],
+        "bad": [
+          "John said he would do the API. Sarah will handle design. The payment module is P1. → This is a LIST, not a summary."
+        ]
+      }
+    },
+    "list": {
+      "display": "bullet-list",
+      "prompt_instruction": "Extract as a list of short items",
+      "fields": ["items"]
+    },
+    "key_topics": {
+      "display": "bullet-list",
+      "prompt_instruction": "Extract the main topics or agenda items that were discussed. Each item should be a short phrase (3-8 words) identifying a distinct discussion topic.",
+      "fields": ["items"],
+      "examples": {
+        "good": [
+          "Payment gateway integration timeline",
+          "Q3 hiring plan for backend team",
+          "Bug triage for release 2.4"
+        ],
+        "bad": [
+          "John talked about payments → Too vague, name the TOPIC not the speaker",
+          "We discussed stuff → Not a topic"
+        ]
+      }
+    },
+    "action_items": {
+      "display": "table",
+      "exportable": true,
+      "defaultWorkItemType": "Task",
+      "prompt_instruction": "Extract action items — things someone committed to DO. Must have an implied or explicit owner AND a verb (build, fix, review, send, schedule, investigate, etc.). If no owner is identifiable, it belongs in next_steps instead. IMPORTANT: When someone responds to a question with 'we will investigate', 'I'll look into it', 'let me check', etc. — that IS an action item (investigation commitment), not just an acknowledgment.",
+      "fields": ["title", "description", "priority", "type", "assignee", "deadline", "dependency", "confidence", "source_quote"],
+      "columns": [
+        { "key": "title", "label": "Item", "editable": true },
+        { "key": "priority", "label": "Priority", "editable": false },
+        { "key": "type", "label": "Type", "editable": false },
+        { "key": "assignee", "label": "Assignee", "editable": true },
+        { "key": "deadline", "label": "Deadline", "editable": true },
+        { "key": "dependency", "label": "Depends On", "editable": true }
+      ],
+      "examples": {
+        "good": [
+          "\"I'll set up the CI pipeline by Friday\" → {title: \"Set up CI pipeline\", assignee: \"speaker's name\", deadline: \"Friday\", priority: null, type: \"Task\"} — use speaker's ACTUAL NAME, not 'speaker'",
+          "\"Sarah, can you review the API spec?\" → {title: \"Review API spec\", assignee: \"Sarah\", deadline: null, priority: null, type: \"Task\"}",
+          "\"We need to fix that login bug before release\" → {title: \"Fix login bug\", assignee: null, deadline: \"before release\", priority: \"P1\", type: \"Bug\"} — 'before release' implies urgency = P1",
+          "\"Developer: We will investigate\" → {title: \"Investigate [topic]\", assignee: null, priority: null} — 'Developer' is a ROLE not a name. Do NOT use roles as assignee. Use null.",
+          "\"We will investigate that\" → {title: \"Investigate [topic]\", assignee: null} — 'we' is not a specific person, use null",
+          "Q: \"Can the API support file upload?\" A: \"Good question. We will investigate that.\" → {title: \"Investigate API file upload support\", assignee: \"John\", deadline: null, priority: \"P3\", type: \"Task\"} — a follow-up commitment to a question IS an action item",
+          "\"Let me look into that and get back to you\" → {title: \"[topic being discussed]\", assignee: \"speaker\", type: \"Task\"} — investigation commitments are action items",
+          "\"We'll circle back on that next week\" → {title: \"Revisit [topic]\", assignee: null, deadline: \"next week\", priority: \"P3\", type: \"Task\"}",
+          "\"If the vendor confirms, I'll start the integration\" → {title: \"Start integration (pending vendor confirmation)\", assignee: \"speaker\", type: \"Task\"} — conditional commitments are still action items",
+          "\"Sarah, can you take care of that?\" \"Sure\" → {title: \"[topic discussed]\", assignee: \"Sarah\", type: \"Task\"} — delegated via question + acceptance",
+          "\"Actually, let me handle that instead\" → {title: \"[topic]\", assignee: \"speaker\", type: \"Task\"} — volunteering/reassignment is an action item",
+          "\"I'll raise this with management\" → {title: \"Escalate [topic] to management\", assignee: \"speaker\", type: \"Task\"} — escalation is an action item",
+          "\"I can do that\" / \"I'll take it\" → {title: \"[topic being discussed]\", assignee: \"speaker\", type: \"Task\"} — volunteering = ownership",
+          "\"Sarah does design, Mike handles backend, and Priya does testing\" → 3 SEPARATE action items: {assignee: \"Sarah\", title: \"Design\"}, {assignee: \"Mike\", title: \"Backend development\"}, {assignee: \"Priya\", title: \"Testing\"}",
+          "\"Once Sarah finishes the API, Mike can start frontend\" → {title: \"Build frontend\", assignee: \"Mike\", dependency: \"Sarah's API completion\"} — infer dependency from 'once/after/when X finishes'",
+          "\"We need all this done before the July 1 release\" → all action items in this context inherit deadline: \"before July 1\"",
+          "\"Nothing moves until the DB migration is done\" → {title: \"Complete DB migration\", priority: \"P1\"} — 'nothing moves until' = P1 blocker",
+          "\"John, tell Mike to handle the deployment\" → {title: \"Handle deployment\", assignee: \"Mike\"} — Mike is the doer, NOT John (John is just the messenger)",
+          "\"We'll all review the document\" → {title: \"Review document\", assignee: \"Team\", type: \"Task\"}"
+        ],
+        "bad": [
+          "\"We should probably look into CI\" → NOT an action item (no person committed, just a suggestion → next_steps at most)",
+          "\"We should investigate login issues\" → NOT an action item ('we should' = suggestion. No specific person committed. → next_steps)",
+          "\"We need to discuss this\" → NOT an action item (discussion intent, not commitment → next_steps)",
+          "\"Maybe we should improve reports\" → NOT an action item and NOT a change request ('maybe' = tentative → feedback as suggestion)",
+          "\"The API is slow\" → NOT an action item (observation, no action verb → feedback)",
+          "\"Maybe we could add dark mode\" → NOT an action item (hypothetical → feedback as suggestion)",
+          "\"Do we even need that? No, let's skip it\" → NOT an action item — this is a DECISION (decided not to do something)",
+          "\"Sarah will do it... actually no, Mike you take it\" → Sarah's item is CANCELLED, only Mike's item exists",
+          "\"Forget what I said about the API — we're not doing that\" → NO action item (it was cancelled)",
+          "\"Someone should probably follow up\" → NOT action_items (no specific owner) — goes in next_steps",
+          "\"We already sent the report\" → NOT an action item (COMPLETED/past tense — skip)",
+          "\"Sarah finished the design last week\" → NOT an action item (historical, already done)",
+          "\"We finished everything\" → NOT an action item (no open tasks)",
+          "\"The password is abc123, use that to login\" → NEVER extract credentials/secrets as task content",
+          "\"Let's approve the release\" → NOT an action item — this is a DECISION",
+          "Discussion only, no commitments made → return EMPTY array. Do NOT invent tasks."
+        ]
+      }
+    },
+    "requirements": {
+      "display": "table",
+      "exportable": true,
+      "defaultWorkItemType": "User Story",
+      "prompt_instruction": "Extract system/product requirements — capabilities the system MUST or SHOULD have. IMPORTANT: When a specific metric is stated ('within 5 seconds', 'support 10,000 records', '99.9% uptime'), that IS a non_functional requirement — extract it with the exact number as acceptance criteria. ALSO extract the human review step if mentioned ('human reviews and approves' = functional requirement for approval workflow). Each requirement needs: title, description, priority, category (functional/non_functional/business_rule), and acceptance criteria.",
+      "fields": ["title", "description", "priority", "category", "acceptance_criteria", "confidence", "source_quote"],
+      "columns": [
+        { "key": "title", "label": "Requirement", "editable": true },
+        { "key": "priority", "label": "Priority", "editable": false },
+        { "key": "category", "label": "Category", "editable": false },
+        { "key": "acceptance_criteria", "label": "Acceptance Criteria", "editable": true }
+      ],
+      "examples": {
+        "good": [
+          "\"Users need to be able to reset their password via email\" → {title: \"Password reset via email\", category: \"functional\", acceptance_criteria: \"User receives reset link within 60 seconds of request\"}",
+          "\"The system must handle 1000 concurrent users\" → {title: \"Support 1000 concurrent users\", category: \"non_functional\"}",
+          "\"All transactions over $10K require manager approval\" → {title: \"Manager approval for transactions over $10K\", category: \"business_rule\"}",
+          "\"System shall allow users to upload PDF documents up to 20 MB\" → {title: \"PDF document upload\", description: \"Allow users to upload PDF documents\", category: \"functional\", acceptance_criteria: \"Supports PDF up to 20 MB\"}",
+          "\"System shall support SSO\" → {title: \"SSO support\", category: \"functional\"} — also check if deadline mentioned nearby → add to constraints too",
+          "\"System shall generate reports within 5 seconds\" → {title: \"Report generation\", category: \"non_functional\", acceptance_criteria: \"Reports generated within 5 seconds\"}",
+          "\"System shall sync employees\" → {title: \"Employee sync\", category: \"functional\"} — if 'depends on X' follows, also add to dependencies section"
+        ],
+        "bad": [
+          "\"The UI should look nice\" → Too vague to be a requirement",
+          "\"John will build the login page\" → This is an action item, not a requirement",
+          "\"As a customer, I want to upload documents\" → This is a USER STORY, not a requirement. Put in user_stories section. A requirement would be: 'System shall support document upload'"
+        ]
+      }
+    },
+    "user_stories": {
+      "display": "numbered-list",
+      "exportable": true,
+      "defaultWorkItemType": "User Story",
+      "prompt_instruction": "Extract user stories, epics, spikes, tech debt items, bug stories, and carry-overs discussed in the session. Format: role (who), action (what), benefit (why). For non-standard items, use role to indicate type. CLASSIFICATION: 'As a X, I want Y so that Z' = user story. 'System shall X' = requirement (different section). 'We need to refactor X' = tech debt (role: 'developer'). 'Research/investigate X' = spike (role: 'team'). 'Critical bug in X' = bug story (role: 'user affected'). 'Carry over from last sprint' = include with note in acceptance_criteria. SCOPE CHANGES: If a story is ADDED mid-session → extract it. If REMOVED/dropped → do NOT extract (it's out of scope). If MOVED to next sprint → extract with note 'carry-over to next sprint' in acceptance_criteria. RE-ESTIMATION: If estimate changes (5→8), use the FINAL estimate only.",
+      "fields": ["role", "action", "benefit", "priority", "acceptance_criteria", "confidence", "source_quote"],
+      "columns": [
+        { "key": "role", "label": "As a...", "editable": true },
+        { "key": "action", "label": "I want to...", "editable": true },
+        { "key": "benefit", "label": "So that...", "editable": true },
+        { "key": "priority", "label": "Priority", "editable": false },
+        { "key": "acceptance_criteria", "label": "Acceptance Criteria", "editable": true }
+      ],
+      "examples": {
+        "good": [
+          "\"Customers keep asking for a way to export their data\" → {role: \"customer\", action: \"export my data as CSV\", benefit: \"I can analyze it in Excel\"}",
+          "\"The admin needs to be able to disable accounts\" → {role: \"admin\", action: \"disable user accounts\", benefit: \"I can handle policy violations quickly\"}",
+          "\"As a customer, I want to upload documents so that I can submit claims online\" → {role: \"customer\", action: \"upload documents\", benefit: \"submit claims online\"}",
+          "\"As an HR user, I want reports\" → {role: \"HR user\", action: \"view/generate reports\", benefit: null} — partial user story, benefit not stated",
+          "\"We need to refactor the payment module — too much tech debt\" → {role: \"developer\", action: \"refactor payment module\", benefit: \"reduce technical debt\", priority: null} — tech debt as story",
+          "\"We need a spike to research OAuth providers\" → {role: \"team\", action: \"research OAuth providers (spike)\", benefit: \"make informed decision on auth approach\", priority: null}",
+          "\"Critical bug: users can't login on Safari\" → {role: \"user\", action: \"login on Safari without errors\", benefit: \"access the system on all browsers\", priority: null} — bug as story",
+          "\"Cart story from last sprint didn't finish — carry it over\" → {role: \"customer\", action: \"add items to cart\", benefit: \"purchase multiple products\", acceptance_criteria: \"Carry-over from previous sprint\"}",
+          "\"Let's add the notification feature to this sprint\" → extract as new story (scope addition)"
+        ],
+        "bad": [
+          "\"Fix the bug on page 3\" → Not a user story format, but still extract as {role: \"user\", action: \"[bug description]\"}",
+          "\"Let's drop the dashboard story — not enough capacity\" → REMOVED from scope — do NOT extract as a story",
+          "\"We discussed the payment epic\" → If no specific stories broken out, this is a key_topic, not a user story"
+        ]
+      }
+    },
+    "scope": {
+      "display": "table",
+      "prompt_instruction": "Extract scope items — things explicitly stated as included in or excluded from the project/sprint. Mark each with 'In Scope' or 'Out of Scope'. Include the rationale if mentioned.",
+      "fields": ["item", "status", "rationale"],
+      "columns": [
+        { "key": "item", "label": "Item", "editable": true },
+        { "key": "status", "label": "In/Out", "editable": false },
+        { "key": "rationale", "label": "Rationale", "editable": true }
+      ],
+      "examples": {
+        "good": [
+          "\"We're not doing mobile this quarter\" → {item: \"Mobile app\", status: \"Out of Scope\", rationale: \"Deferred to Q4\"}",
+          "\"SSO is a must-have for launch\" → {item: \"SSO integration\", status: \"In Scope\", rationale: \"Required for enterprise customers\"}",
+          "\"Document upload and profile management are included in this release\" → TWO items: {item: \"Document upload\", status: \"In Scope\", rationale: \"This release\"} + {item: \"Profile management\", status: \"In Scope\", rationale: \"This release\"}",
+          "\"Payment gateway integration is out of scope for Phase 1\" → {item: \"Payment gateway integration\", status: \"Out of Scope\", rationale: \"Phase 1\"}",
+          "\"Reporting is in scope. Dashboard redesign is out of scope\" → TWO items: {item: \"Reporting\", status: \"In Scope\"} + {item: \"Dashboard redesign\", status: \"Out of Scope\"}"
+        ],
+        "bad": [
+          "\"The API is important\" → No scope decision was made here",
+          "\"We need to build the API\" → Not a scope statement — it's a requirement or action item"
+        ]
+      }
+    },
+    "dependencies": {
+      "display": "numbered-list",
+      "prompt_instruction": "Extract dependencies — things that must happen first, external teams/systems needed, or items blocked by other work. Include what depends on what and current status if known. IMPORTANT: 'depends on X', 'requires X', 'needs X first', 'blocked by X' all signal dependencies.",
+      "fields": ["description", "depends_on", "status"],
+      "examples": {
+        "good": [
+          "\"We can't start the frontend until the API contracts are finalized\" → {description: \"Frontend development\", depends_on: \"API contract finalization\", status: \"Blocked\"}",
+          "\"We need the DevOps team to set up the staging environment first\" → {description: \"Staging environment setup\", depends_on: \"DevOps team\", status: \"Waiting\"}",
+          "\"Implementation depends on Azure AD integration\" → {description: \"Implementation\", depends_on: \"Azure AD integration\", status: null}",
+          "\"System shall sync employees. Sync depends on Workday API\" → {description: \"Employee sync\", depends_on: \"Workday API\", status: null} — also extract the requirement in requirements section"
+        ],
+        "bad": [
+          "\"The API is important\" → No dependency relationship expressed"
+        ]
+      }
+    },
+    "stakeholders": {
+      "display": "table",
+      "prompt_instruction": "Extract ALL stakeholders — both people SPEAKING and people/teams MENTIONED as impacted or involved. CRITICAL: If someone says 'the accounts payable team', 'the IT team', 'vendors' — these ARE stakeholders even though they're not in the room. Extract them. Include their role and influence. SPEAKERS: People directly participating in the conversation. MENTIONED: Teams or people referenced as impacted, responsible, or waiting ('vendors who wait 30 days', 'IT team who maintains VPN'). Extract BOTH. Influence: high = decision-maker/budget-holder, medium = implementer/SME, low = informed/impacted only.",
+      "fields": ["name", "role", "interest", "influence"],
+      "columns": [
+        { "key": "name", "label": "Name/Role", "editable": true },
+        { "key": "role", "label": "Responsibility", "editable": true },
+        { "key": "interest", "label": "Interest Area", "editable": true },
+        { "key": "influence", "label": "Influence", "editable": false }
+      ],
+      "examples": {
+        "good": [
+          "{name: \"Lisa\", role: \"HR Manager\", interest: \"Employee onboarding\", influence: \"high\"} — named speaker",
+          "{name: \"Product Owner\", role: \"Product decisions\", interest: \"Feature prioritization\", influence: \"high\"} — unnamed speaker, use role",
+          "{name: \"Accounts Payable Team\", role: \"Finance\", interest: \"Invoice payments\", influence: \"medium\"} — MENTIONED team, not speaking",
+          "{name: \"Vendors\", role: \"External\", interest: \"Timely payments\", influence: \"low\"} — MENTIONED as impacted, not in the room",
+          "{name: \"IT Team\", role: \"Infrastructure\", interest: \"VPN maintenance\", influence: \"medium\"} — MENTIONED as involved"
+        ],
+        "bad": [
+          "Only extracting speakers and ignoring mentioned teams → WRONG. 'The IT team maintains the VPN' = IT Team is a stakeholder.",
+          "Skipping vendors mentioned as impacted → WRONG. Impacted parties are stakeholders."
+        ]
+      }
+    },
+    "pain_points": {
+      "display": "numbered-list",
+      "prompt_instruction": "Extract pain points — frustrations, problems, or inefficiencies about CURRENT state. PRESERVE ALL NUMBERS in the description: percentages (5% error rate), time (30 days wait), counts (200 invoices/day), costs. Numbers quantify the pain and justify the project. Include IMPACT on other people/teams (e.g., 'vendors complaining because of 30-day payment delay'). CLASSIFICATION: Pain point = the PROBLEM, not the solution. DEDUP: If same pain point mentioned by multiple people, merge into ONE entry. Third-party impact (vendors waiting, customers complaining) IS a pain point — extract it.",
+      "fields": ["description", "raised_by", "impact"],
+      "examples": {
+        "good": [
+          "\"I spend two hours every morning just copying data between spreadsheets\" → {description: \"Manual data copying between spreadsheets takes 2 hours daily\", raised_by: \"speaker\", impact: \"Lost productivity, error-prone\"}",
+          "\"Every time we deploy, something breaks in production\" → {description: \"Deployments frequently cause production issues\", raised_by: \"speaker\", impact: \"Reliability concerns, customer impact\"}",
+          "\"Three new hires couldn't log in on day one because of typos\" → {description: \"Manual account creation causes typos leading to login failures\", raised_by: \"Lisa\", impact: \"Poor employee first-day experience (3 incidents last month)\"}",
+          "\"We have no visibility into what's happening until something breaks\" → {description: \"No proactive monitoring — issues only discovered when they break\", raised_by: \"speaker\", impact: \"Reactive support, customer-facing outages\"}"
+        ],
+        "bad": [
+          "\"The system works fine\" → NOT a pain point (positive statement)",
+          "\"We need automation\" → NOT a pain point — this is a DESIRED OUTCOME or requirement. Pain point is the problem it solves.",
+          "\"We want to reduce manual work\" → NOT a pain point — this is a desired outcome. The pain point would be: 'Manual work takes X hours'"
+        ]
+      }
+    },
+    "current_workflows": {
+      "display": "numbered-list",
+      "prompt_instruction": "Extract descriptions of current workflows or processes — how things work TODAY. PRESERVE ALL NUMBERS: volumes (200/day), time (15 minutes per invoice), headcount (3 people full-time), costs, frequencies. These quantify the problem and justify the project. Include the full picture: what happens, how long it takes, how many people are involved, what volume they handle.",
+      "fields": ["process", "description", "pain_point"],
+      "examples": {
+        "good": [
+          "\"Right now, when a customer submits a request, it goes to email, then someone manually enters it into Jira\" → {process: \"Customer request intake\", description: \"Customer submits via email → manual entry into Jira\", pain_point: \"Manual step prone to delays and errors\"}",
+          "\"HR creates accounts in 5 systems: email, Slack, Jira, VPN, benefits portal. Takes 2 hours per person\" → {process: \"Employee onboarding account creation\", description: \"HR manually creates accounts in email, Slack, Jira, VPN, benefits portal per new hire\", pain_point: \"2 hours per employee, error-prone\"}",
+          "\"When someone leaves, manager sends email to IT, IT revokes access within 3 days\" → {process: \"Employee offboarding\", description: \"Manager emails IT → IT revokes access (3-day SLA)\", pain_point: \"3-day delay leaves access open\"}"
+        ],
+        "bad": [
+          "\"We use Jira\" → Not a workflow description, just a tool mention",
+          "\"We want to automate onboarding\" → Not a current workflow — this is a desired outcome"
+        ]
+      }
+    },
+    "desired_outcomes": {
+      "display": "bullet-list",
+      "prompt_instruction": "Extract desired outcomes — what participants want the solution to ACHIEVE. Include SPECIFIC METRICS when stated: 'reduce from 15 minutes to 2 minutes', 'cut errors from 5% to near zero'. PRESERVE exact numbers — these become acceptance criteria later. CLASSIFICATION: Outcome = measurable business result. Requirement = specific system capability (different section). If stakeholders CONFLICT on outcomes, capture all perspectives.",
+      "fields": ["items"],
+      "examples": {
+        "good": [
+          "Reduce manual data entry time by 80%",
+          "Enable customers to self-serve without contacting support",
+          "Zero-downtime deployments",
+          "One form submission auto-provisions all systems within 15 minutes",
+          "Zero typos through automation",
+          "99.9% uptime SLA"
+        ],
+        "bad": [
+          "Build an API → This is a task/requirement, not an outcome",
+          "Use React → This is a technology choice, not an outcome",
+          "System shall support SSO → This is a REQUIREMENT (system capability), not an outcome. Outcome would be: 'Single sign-on for all employees'"
+        ]
+      }
+    },
+    "feedback": {
+      "display": "table",
+      "prompt_instruction": "Extract ALL OBSERVATIONS and OPINIONS about what was demonstrated — both positive AND negative. IMPORTANT: Even simple positive statements like 'works well', 'looks good', 'smooth', 'I like it' ARE feedback — DO NOT skip them. Every time someone expresses approval or disapproval of a feature, that is feedback. DEDUPLICATION: If multiple people say the same thing about the same feature, merge into ONE row with combined raised_by ('Customer, Tester'). CROSS-LISTING: When a performance/quality issue is reported, it MUST ALSO appear in bugs_reported section.",
+      "fields": ["item", "feedback", "raised_by", "sentiment", "confidence", "source_quote"],
+      "columns": [
+        { "key": "item", "label": "Feature/Item", "editable": true },
+        { "key": "feedback", "label": "Feedback", "editable": true },
+        { "key": "raised_by", "label": "Raised By", "editable": true },
+        { "key": "sentiment", "label": "Sentiment", "editable": false }
+      ],
+      "examples": {
+        "good": [
+          "\"The dashboard looks great, really clean\" → {item: \"Dashboard\", feedback: \"Clean and well-designed\", raised_by: \"Lisa\", sentiment: \"positive\"}",
+          "Customer: \"Payment is slow\" + Tester: \"Loading time high\" + Customer: \"Response time affecting users\" → ONE ROW: {item: \"Payment page\", feedback: \"Slow performance during transactions\", raised_by: \"Customer, Tester\", sentiment: \"negative\"} — MERGED because same feature + same issue. Also extract in bugs_reported.",
+          "\"I like the auto-complete on department\" → {item: \"Department field\", feedback: \"Auto-complete feature liked\", raised_by: \"speaker\", sentiment: \"positive\"}",
+          "\"This looks good overall\" → {item: \"Overall application\", feedback: \"Positive overall impression\", raised_by: \"speaker\", sentiment: \"positive\"}"
+        ],
+        "bad": [
+          "\"Let me share my screen\" → Meeting logistics, not feedback",
+          "\"Can you add a filter?\" → This is a CHANGE REQUEST (asking for something new), not feedback",
+          "\"Approved, ship it\" → This is an APPROVAL, not feedback",
+          "Creating 3 SEPARATE rows for: 'payment slow' + 'loading high' + 'response time bad' → WRONG. These are the SAME issue. Merge into ONE row."
+        ]
+      }
+    },
+    "change_requests": {
+      "display": "table",
+      "exportable": true,
+      "defaultWorkItemType": "User Story",
+      "prompt_instruction": "Extract REQUESTS for modification — concrete asks to ADD, CHANGE, or REMOVE something. Must be actionable (specific enough to implement). CLASSIFICATION RULE: Must contain an explicit ask ('can you...', 'we need...', 'add...', 'change...', 'make it...'). General opinions without a specific ask ('the UI should look better') are NOT change requests. If the feature is BROKEN (doesn't work at all) → bugs_reported instead. TYPE RULES: Enhancement = modify existing feature. New Feature = add something that doesn't exist. Fix = correct behavior. Deferred = explicitly pushed to future ('we'll consider for next sprint', 'maybe next release'). IMPORTANT: If PM says 'we'll consider it' or 'good suggestion, next sprint' — still extract as a change request with type='Deferred' and lower confidence. Deferral decisions are still valuable to track.",
+      "fields": ["description", "priority", "requested_by", "type", "confidence", "source_quote"],
+      "columns": [
+        { "key": "description", "label": "Change Request", "editable": true },
+        { "key": "priority", "label": "Priority", "editable": false },
+        { "key": "requested_by", "label": "Requested By", "editable": true },
+        { "key": "type", "label": "Type", "editable": false }
+      ],
+      "examples": {
+        "good": [
+          "\"Can you add a duplicate button on that screen?\" → {description: \"Add duplicate button to item screen\", type: \"New Feature\", priority: null} — no priority mentioned, use null",
+          "\"The date should show in DD/MM/YYYY format, not the American way\" → {description: \"Change date format to DD/MM/YYYY\", type: \"Fix\", priority: null}",
+          "\"Can we make the employee ID auto-generated instead of manual?\" → {description: \"Auto-generate employee ID\", type: \"Enhancement\", priority: null}",
+          "\"Add a bulk upload option\" → {description: \"Add bulk upload for batch operations\", type: \"New Feature\", priority: null}",
+          "\"This is critical — change the button color to blue for brand compliance\" → {description: \"Change submit button to blue (brand)\", type: \"Enhancement\", priority: \"P1\"} — 'critical' = P1",
+          "\"Please fix the order screen issue\" → {description: \"Fix order screen issue\", type: \"Fix\", priority: null} — 'please fix' = Fix type, but NO priority stated",
+          "\"We need some improvement in reports\" → {description: \"Improve reports\", type: \"Enhancement\", priority: null} — no urgency language = null priority"
+        ],
+        "bad": [
+          "\"The UI should look better\" → Too vague — no specific ask, this is feedback",
+          "\"It's not working\" → This is a BUG (broken), not a change request",
+          "\"I like this feature\" → This is FEEDBACK (observation), not a change request",
+          "\"This is slow\" → This is FEEDBACK unless followed by 'make it faster' or 'fix the performance'",
+          "\"Maybe we should improve reports\" → NOT a change request. 'Maybe' = tentative/suggestion → put in feedback as suggestion. Only create change_request when language is DEFINITIVE: 'please fix', 'we need', 'add this', 'change this to'",
+          "\"We should consider adding search\" → NOT a change request ('should consider' = discussion → feedback)"
+        ]
+      }
+    },
+    "bugs_reported": {
+      "display": "table",
+      "exportable": true,
+      "defaultWorkItemType": "Bug",
+      "prompt_instruction": "Extract bugs AND performance issues reported during the demo. Include: things that FAILED, produced ERRORS, showed WRONG DATA, were UNRESPONSIVE, OR had PERFORMANCE PROBLEMS. IMPORTANT: If a developer/tester explains the ROOT CAUSE (e.g., 'probably the database query', 'loading without pagination'), include that in the description — it's valuable technical context. If another person CONFIRMS the bug ('I can reproduce that', 'confirmed'), note the severity as at least Major. SEVERITY: Critical = blocks workflow/blocker. Major = feature impaired or confirmed reproducible. Minor = cosmetic. Use null if not stated. If someone says 'blocker' or 'before launch' about this bug, severity = Critical.",
+      "fields": ["description", "severity", "steps_to_reproduce", "confidence", "source_quote"],
+      "columns": [
+        { "key": "description", "label": "Bug", "editable": true },
+        { "key": "severity", "label": "Severity", "editable": false },
+        { "key": "steps_to_reproduce", "label": "Steps/Context", "editable": true }
+      ],
+      "examples": {
+        "good": [
+          "\"When I click submit, nothing happens\" → {description: \"Submit button unresponsive\", severity: \"Critical\", steps_to_reproduce: \"Click submit on the form\"}",
+          "\"The total is showing the wrong number\" → {description: \"Incorrect total calculation\", severity: \"Critical\", steps_to_reproduce: \"View total on summary page\"}",
+          "\"It's been spinning for 10 seconds\" → {description: \"Provisioning timeout/extremely slow\", severity: \"Major\", steps_to_reproduce: \"Submit onboarding form and wait\"}",
+          "\"There is an issue in the order screen\" → {description: \"Issue reported in order screen\", severity: null, steps_to_reproduce: null} — vague but still extract it. Use null for unknowns.",
+          "Multiple people report 'payment slow' + 'loading high' + 'response time bad' → {description: \"Payment page slow performance during transactions\", severity: null, steps_to_reproduce: \"Process transactions\"} — MUST extract as bug when multiple people report same performance issue. Even if it also appears in feedback.",
+          "\"Search feels slow\" + \"needs improvement\" → {description: \"Search performance issue\", severity: null, steps_to_reproduce: null} — fix/improvement requested = extract as bug",
+          "\"I got an error message when I uploaded a large file\" → {description: \"Error on large file upload\", severity: \"Major\", steps_to_reproduce: \"Upload file larger than X MB\"}"
+        ],
+        "bad": [
+          "\"I don't like the color\" → NOT a bug — it's a preference/feedback",
+          "\"The layout feels crowded\" → NOT a bug — it's design feedback",
+          "\"It would be nice to have dark mode\" → NOT a bug — it's a new feature request",
+          "Leaving bugs_reported EMPTY when users clearly reported performance problems → WRONG. Performance complaints from multiple users = performance bug."
+        ]
+      }
+    },
+    "approvals": {
+      "display": "bullet-list",
+      "prompt_instruction": "Extract ONLY explicit unconditional approvals — clear sign-offs with no caveats. Signals: 'approved', 'looks good, ship it', 'sign off', 'go-ahead', 'accepted'. CLASSIFICATION RULE: The approval must be UNCONDITIONAL. 'Approved but fix X first' is NOT an approval — it's a conditional (extract as action_item instead). 'Looks good' without conditions IS an approval. Include WHO approved and WHAT was approved.",
+      "fields": ["items"],
+      "examples": {
+        "good": [
+          "\"The basic flow is approved — we can go live\" → Basic flow approved for go-live",
+          "\"The reports module looks great. Approved.\" → Reports module approved by [speaker]",
+          "\"Confirmation email looks good\" → Confirmation email approved by [speaker]",
+          "\"API contract v2 signed off for development\" → API contract v2 signed off",
+          "\"Yes, ship it\" → [Feature being discussed] approved for release"
+        ],
+        "bad": [
+          "\"Maybe we could go with option A\" → NOT an approval — just a suggestion",
+          "\"The dashboard is good but I want the date filter fixed before I sign off\" → NOT an approval — it's CONDITIONAL. Extract as action item: 'Fix date filter (required for sign-off)'",
+          "\"Looks promising\" → NOT an approval — 'promising' is not 'approved'",
+          "\"I think it's ready\" → Borderline — only count if followed by clear sign-off language"
+        ]
+      }
+    },
+    "sprint_goal": {
+      "display": "paragraph",
+      "prompt_instruction": "Extract the sprint goal or iteration objective — what the team aims to deliver by end of sprint. Write as a clear 1-2 sentence goal statement. If no explicit sprint goal was stated, synthesize from the discussed priorities. If NO sprint goal was discussed at all (general discussion, no iteration planning), return empty string. Also capture: team capacity/velocity if mentioned, release date if stated.",
+      "fields": ["content"],
+      "examples": {
+        "good": [
+          "Deliver the complete payment integration flow (checkout, processing, confirmation) so that beta users can make their first real purchase by sprint end.",
+          "Complete user authentication module and deploy to staging. Team velocity: 40 points, capacity: 4 developers available.",
+          "No explicit sprint goal discussed → return empty string ''"
+        ],
+        "bad": [
+          "Do a bunch of stuff for payments → Too vague and unprofessional",
+          "Inventing a goal when none was discussed → return empty"
+        ]
+      }
+    },
+    "story_points": {
+      "display": "table",
+      "prompt_instruction": "Extract effort estimates discussed — story points, t-shirt sizes, hours, days, or any estimation. RE-ESTIMATION: If an estimate changes during discussion (e.g., '5 initially, then agreed on 8'), use ONLY the FINAL agreed estimate. Capture the change in notes. DISAGREEMENT: If team members disagree and no consensus, capture the compromise or final call. VELOCITY/CAPACITY: If team velocity or sprint capacity is mentioned, capture as a note on the first row or as a separate row with item='Sprint Capacity'. FORMATS: '8 points', 'L (t-shirt)', '3 days', '2 sprints' — preserve the format used.",
+      "fields": ["item", "estimate", "notes"],
+      "columns": [
+        { "key": "item", "label": "Story/Item", "editable": true },
+        { "key": "estimate", "label": "Estimate", "editable": true },
+        { "key": "notes", "label": "Notes", "editable": true }
+      ],
+      "examples": {
+        "good": [
+          "\"Cart story is a 5\" \"No, it's an 8 with inventory checks\" \"Agreed, 8\" → {item: \"Cart story\", estimate: \"8 points\", notes: \"Initially estimated 5, increased to 8 due to real-time inventory checks\"}",
+          "\"Payment is 13 — complex with retries and webhooks\" → {item: \"Payment\", estimate: \"13 points\", notes: \"Complex: error handling, retries, webhooks\"}",
+          "\"Team velocity is 40 points this sprint\" → {item: \"Sprint Capacity\", estimate: \"40 points\", notes: \"Team velocity\"}",
+          "\"We have 4 developers, 2 weeks = roughly 35 points capacity\" → {item: \"Sprint Capacity\", estimate: \"35 points\", notes: \"4 developers, 2 weeks\"}",
+          "\"Login bug — small, 2 points\" → {item: \"Login bug fix\", estimate: \"2 points\", notes: null}",
+          "\"OAuth spike — timebox to 3 days\" → {item: \"OAuth research spike\", estimate: \"3 days\", notes: \"Timeboxed\"}"
+        ],
+        "bad": [
+          "\"The story initially was 5\" then later \"we agreed on 8\" → do NOT show both 5 and 8. Only show final: 8",
+          "No estimates discussed → return empty array. Do NOT invent estimates."
+        ]
+      }
+    },
+    "decisions": {
+      "display": "numbered-list",
+      "prompt_instruction": "Extract decisions — things that were AGREED upon by participants (not just suggested by one person). A decision requires explicit or implicit consensus. Include the rationale and who made/drove the decision.",
+      "fields": ["decision", "rationale", "made_by", "confidence", "source_quote"],
+      "examples": {
+        "good": [
+          "\"Let's go with PostgreSQL\" (after discussion, team agrees) → {decision: \"Use PostgreSQL as the primary database\", rationale: \"Better JSON support and team familiarity\", made_by: \"Team consensus\"}",
+          "\"OK, we'll push the release to next Wednesday\" → {decision: \"Release postponed to next Wednesday\", rationale: \"Need more testing time\", made_by: \"PM\"}",
+          "\"Makes sense, let's do that\" (after someone proposes X) → {decision: \"[what was proposed]\", rationale: \"Team agreement\", made_by: \"Team consensus\"} — informal agreement IS a decision",
+          "\"Do we even need that? No, let's skip it\" → {decision: \"Not implementing [topic]\", rationale: \"Deemed unnecessary\", made_by: \"speaker\"} — deciding NOT to do something is still a decision",
+          "\"Let's push that to next quarter\" → {decision: \"Defer [topic] to next quarter\", rationale: \"Not a priority now\", made_by: \"speaker\"} — deferral is a decision",
+          "\"We discussed OAuth and SAML. Let's go with OAuth.\" → {decision: \"Implement OAuth\", rationale: \"Chosen over SAML after discussion\", made_by: \"speaker\"}",
+          "\"We need to cut mobile to meet the deadline\" → {decision: \"Cut mobile from current scope\", rationale: \"Required to meet deadline\", made_by: \"speaker\"} — also creates a constraint (deadline)",
+          "\"Let's go with Plan A... wait, actually Plan B is better\" → {decision: \"Go with Plan B\", rationale: \"Better option after reconsideration\"} — only the FINAL decision, Plan A is discarded",
+          "\"Should we use OAuth?\" \"Yes, let's do it\" → {decision: \"Implement OAuth\", made_by: \"Team consensus\"} — question immediately answered = decision, NOT an open question"
+        ],
+        "bad": [
+          "\"I think we should use PostgreSQL\" (no agreement from others) → NOT a decision yet, just an opinion",
+          "\"We're using React\" (stating existing fact, not deciding) → NOT a decision made in this meeting",
+          "\"We could go either way\" → NOT a decision (no commitment made)",
+          "\"Let me check with the team\" → NOT a decision (deferred, no resolution)",
+          "\"Let's do Plan A\" then later \"No wait, Plan B instead\" → Plan A is NOT a decision (it was overruled)",
+          "\"The budget is 50 lakh\" (pre-existing fact, not decided now) → NOT a decision — it's a constraint"
+        ]
+      }
+    },
+    "questions": {
+      "display": "numbered-list",
+      "prompt_instruction": "Extract questions that were raised but NOT definitively answered in this meeting. These are open items needing follow-up. Include context on why the question matters and who should answer it. NOTE: A question can appear here AND also generate an action item — e.g., 'Can the API handle uploads?' (question) + 'Investigate API upload support' (action item from the response 'we will investigate that'). Both are valid extractions.",
+      "fields": ["question", "context", "assigned_to", "confidence", "source_quote"],
+      "examples": {
+        "good": [
+          "\"Do we need HIPAA compliance for this?\" (no one answered definitively) → {question: \"Is HIPAA compliance required?\", context: \"Affects architecture decisions for data storage\", assigned_to: \"Legal team\"}",
+          "\"What's the budget for infrastructure?\" → {question: \"Infrastructure budget for this project\", context: \"Needed to decide between cloud providers\", assigned_to: \"Finance\"}",
+          "\"Can the API support file upload?\" \"We'll investigate\" → STILL an open question (not answered, just acknowledged) — also creates an action item",
+          "\"I'm not sure if that's compatible\" → {question: \"Compatibility of [topic]\", context: \"Uncertainty raised during discussion\", assigned_to: null} — expressed uncertainty = implicit question"
+        ],
+        "bad": [
+          "\"What time is the next meeting?\" \"It's at 3pm\" → Question was ANSWERED, don't include",
+          "\"Can you share your screen?\" → Meeting logistics, not a project question",
+          "\"Do we even need that? No, let's skip it\" → RHETORICAL question that was immediately answered — this is a DECISION, not an open question",
+          "\"Should we use OAuth?\" \"Yes, let's do that\" → Question was ANSWERED in this meeting — extract as a DECISION instead"
+        ]
+      }
+    },
+    "risks": {
+      "display": "table",
+      "exportable": true,
+      "defaultWorkItemType": "Task",
+      "prompt_instruction": "Extract risks — potential negative outcomes, concerns about things that could go wrong, or uncertainties that threaten success. Include impact level (high/medium/low) and mitigation strategy if discussed.",
+      "fields": ["description", "impact", "mitigation", "confidence", "source_quote"],
+      "columns": [
+        { "key": "description", "label": "Risk", "editable": true },
+        { "key": "impact", "label": "Impact", "editable": false },
+        { "key": "mitigation", "label": "Mitigation", "editable": true }
+      ],
+      "examples": {
+        "good": [
+          "\"If the vendor doesn't deliver the API on time, we're stuck\" → {description: \"Vendor API delivery delay\", impact: \"high\", mitigation: \"Prepare mock API as fallback\"}",
+          "\"We only have one person who knows that system\" → {description: \"Single point of failure — only one engineer knows the legacy system\", impact: \"medium\", mitigation: null}",
+          "\"If we don't get sign-off by Friday, the timeline slips\" → {description: \"Timeline slips without Friday sign-off\", impact: \"high\", mitigation: null} — FUTURE potential problem = risk",
+          "\"The new hire might not ramp up fast enough\" → {description: \"New hire ramp-up may be slower than planned\", impact: \"medium\", mitigation: null}",
+          "\"We're not sure the third-party API can handle our volume\" → {description: \"Third-party API may not scale to required volume\", impact: \"high\", mitigation: null}",
+          "\"Delay in API delivery may impact the project timeline\" → {description: \"API delivery delay impacting timeline\", impact: \"high\", mitigation: null}",
+          "\"Assume vendor support is available. Risk: vendor delays\" → assumption goes in assumptions section, risk: {description: \"Vendor delays\", impact: \"medium\", mitigation: null}"
+        ],
+        "bad": [
+          "\"The project is going well\" → Not a risk",
+          "\"I can't start because I'm waiting for credentials\" → NOT a risk — this is a CURRENT BLOCKER (it's happening now, not a future possibility)",
+          "\"Don't start until I confirm\" → NOT a risk — this is a blocker/dependency",
+          "General discussion with no risks mentioned → return empty array []. Do NOT invent risks that weren't discussed"
+        ]
+      }
+    },
+    "blockers": {
+      "display": "numbered-list",
+      "exportable": true,
+      "defaultWorkItemType": "Bug",
+      "prompt_instruction": "Extract blockers — things CURRENTLY preventing progress right now. Different from risks (which are potential future problems). Include who is blocked and what they're waiting on.",
+      "fields": ["description", "blocked_person", "waiting_on", "confidence", "source_quote"],
+      "examples": {
+        "good": [
+          "\"I can't start the integration because I don't have API credentials yet\" → {description: \"No API credentials for integration\", blocked_person: \"speaker\", waiting_on: \"DevOps to provision credentials\"}",
+          "\"The design team hasn't finished the mockups so we can't build the UI\" → {description: \"UI mockups not ready\", blocked_person: \"Frontend team\", waiting_on: \"Design team\"}",
+          "\"Don't start until I confirm with the client\" → {description: \"Waiting for client confirmation before starting\", blocked_person: \"Team\", waiting_on: \"speaker's client confirmation\"} — conditional hold = blocker",
+          "\"We're stuck — the server is down and we can't test\" → {description: \"Server down, testing blocked\", blocked_person: \"Team\", waiting_on: \"Server restoration\"}"
+        ],
+        "bad": [
+          "\"We might run out of time\" → This is a RISK (future possibility), not a current blocker",
+          "\"If the API isn't ready by Friday, we're in trouble\" → This is a RISK (conditional future), not a blocker (nobody is stuck RIGHT NOW)",
+          "\"The new hire might not ramp up fast enough\" → RISK, not a blocker"
+        ]
+      }
+    },
+    "constraints": {
+      "display": "bullet-list",
+      "prompt_instruction": "Extract ALL constraints — fixed limitations the team must work within. CRITICAL: Budget ('200,000 dollars', '50 lakh') and timeline ('6 months', 'by December') are ALWAYS constraints when stated — NEVER skip them. Also include: technology mandates ('AWS only', 'no cloud', 'on-premises'), regulatory requirements ('data residency', 'GDPR'), resource limitations. PRESERVE EXACT NUMBERS: '$200,000' not 'fixed budget'. '6 months' not 'limited timeline'. The specific number IS the constraint.",
+      "fields": ["items"],
+      "examples": {
+        "good": [
+          "Must launch before December 1st regulatory deadline",
+          "Budget capped at $50K for infrastructure",
+          "Approved budget: 50 lakh rupees",
+          "Must use existing Oracle database — no migration allowed",
+          "Only 2 developers available for this project",
+          "Production deployment must happen by August 1",
+          "Development must finish by July 15",
+          "\"UAT can start on July 22\" → Constraint: \"UAT start date: July 22\" — 'can start' with a specific date = scheduled milestone = constraint",
+          "\"Deployment is planned for August 1\" → Constraint: \"Production deployment: August 1\" — 'planned for' = scheduled milestone"
+        ],
+        "bad": [
+          "\"We'd prefer to use TypeScript\" → Preference, not a constraint",
+          "\"Let's set the deadline to July 15\" (decided in this meeting) → This is a DECISION, not a constraint (it was just chosen, not a pre-existing limitation)",
+          "\"We might not have enough budget\" → This is a RISK, not a constraint (uncertain, not confirmed)"
+        ]
+      }
+    },
+    "assumptions": {
+      "display": "bullet-list",
+      "prompt_instruction": "Extract assumptions — things stated or implied as true but NOT verified or confirmed. These need validation. Key signals: 'we assume', 'assuming', 'we expect', 'should be available'.",
+      "fields": ["items"],
+      "examples": {
+        "good": [
+          "The existing API can handle the additional load without scaling",
+          "Users will have Chrome 90+ (no IE11 support needed)",
+          "The vendor will deliver their SDK by end of month",
+          "\"We assume all users have corporate email accounts\" → All users have corporate email accounts",
+          "\"Assume vendor support is available\" → Vendor support is available — also check if related risk follows"
+        ],
+        "bad": [
+          "\"We confirmed with legal that we're compliant\" → This is a CONFIRMED fact, not an assumption",
+          "\"The vendor might be delayed\" → This is a RISK, not an assumption. 'Might' = uncertainty about a negative outcome"
+        ]
+      }
+    },
+    "next_steps": {
+      "display": "bullet-list",
+      "prompt_instruction": "Extract next steps — what happens after this meeting. Follow-up meetings, future plans, or actions without a specific assigned owner. If something has an owner, it belongs in action_items instead.",
+      "fields": ["items"],
+      "examples": {
+        "good": [
+          "Schedule follow-up meeting with the vendor next week",
+          "Revisit the architecture decision after POC results",
+          "Share meeting notes with the wider team"
+        ],
+        "bad": [
+          "\"John will fix the bug by Friday\" → Has an owner — belongs in action_items"
+        ]
+      }
+    },
+    "attendees": {
+      "display": "bullet-list",
+      "prompt_instruction": "Extract names of people mentioned as present, speaking, or participating. Include their role if mentioned. Use the name as spoken — don't guess full names.",
+      "fields": ["items"],
+      "examples": {
+        "good": [
+          "John (Backend Lead)",
+          "Sarah",
+          "Sohir (presenting the demo)"
+        ],
+        "bad": [
+          "Someone → Too vague, skip if no name is identifiable"
+        ]
+      }
+    }
+  },
+
+  "templates": [
+    {
+      "id": "meeting-minutes",
+      "name": "Meeting Minutes",
+      "description": "Summary, attendees, key topics, decisions, action items, constraints, and next steps",
+      "sections": [
+        { "key": "summary", "type": "text", "label": "Summary" },
+        { "key": "attendees", "type": "attendees", "label": "Attendees" },
+        { "key": "key_topics", "type": "key_topics", "label": "Key Topics Discussed" },
+        { "key": "decisions", "type": "decisions", "label": "Decisions Made" },
+        { "key": "action_items", "type": "action_items", "label": "Action Items" },
+        { "key": "constraints", "type": "constraints", "label": "Constraints" },
+        { "key": "questions", "type": "questions", "label": "Open Questions" },
+        { "key": "next_steps", "type": "next_steps", "label": "Next Steps" }
+      ],
+      "cross_section_rules": [
+        "key_topics captures WHAT was discussed. decisions captures WHAT was agreed. Both can come from same discussion.",
+        "action_items requires a specific person committing. next_steps is for items without a named owner.",
+        "constraints are pre-existing facts (budget, deadlines stated as given). decisions are things agreed IN this meeting.",
+        "questions are UNANSWERED. If question was asked and answered → decision or action_item, NOT question."
+      ]
+    },
+    {
+      "id": "requirements-doc",
+      "name": "Requirements Document",
+      "description": "User stories, requirements with acceptance criteria, scope, constraints, and risks",
+      "sections": [
+        { "key": "summary", "type": "text", "label": "Summary" },
+        { "key": "user_stories", "type": "user_stories", "label": "User Stories" },
+        { "key": "requirements", "type": "requirements", "label": "Requirements" },
+        { "key": "scope", "type": "scope", "label": "Scope (In/Out)" },
+        { "key": "constraints", "type": "constraints", "label": "Constraints" },
+        { "key": "assumptions", "type": "assumptions", "label": "Assumptions" },
+        { "key": "dependencies", "type": "dependencies", "label": "Dependencies" },
+        { "key": "risks", "type": "risks", "label": "Risks" },
+        { "key": "questions", "type": "questions", "label": "Open Questions" }
+      ],
+      "cross_section_rules": [
+        "'As a X, I want Y so that Z' = user_stories. 'System shall X' = requirements. These are DIFFERENT — both can come from one discussion.",
+        "'System shall X. Must complete by July 15' = requirements (capability) + constraints (deadline).",
+        "'System shall sync with X. Depends on X API' = requirements (capability) + dependencies (what it needs).",
+        "'Assume X is available. Risk: X may delay' = assumptions + risks (both from same sentence).",
+        "'X is in scope. Y is out of scope' = scope (two items). 'In this release' = In Scope. 'Not in this phase' = Out of Scope.",
+        "User story is NOT a requirement. Requirement is NOT a user story. Both can come from same conversation.",
+        "A sentence with NO risks mentioned → risks should be empty []. Do NOT invent risks."
+      ]
+    },
+    {
+      "id": "action-items",
+      "name": "Action Items Only",
+      "description": "Tasks, decisions, dependencies, blockers, and next steps",
+      "sections": [
+        { "key": "summary", "type": "text", "label": "Summary" },
+        { "key": "action_items", "type": "action_items", "label": "Action Items" },
+        { "key": "decisions", "type": "decisions", "label": "Decisions Made" },
+        { "key": "blockers", "type": "blockers", "label": "Blockers" },
+        { "key": "dependencies", "type": "dependencies", "label": "Dependencies" },
+        { "key": "next_steps", "type": "next_steps", "label": "Next Steps" }
+      ],
+      "cross_section_rules": [
+        "action_items = person committed (name + verb). next_steps = no specific owner. NEVER put 'we should' in action_items.",
+        "blockers = CURRENTLY preventing progress NOW. dependencies = must happen first but not currently blocking.",
+        "'Approved the release' = decision, NOT an action item.",
+        "If same task is mentioned twice (assigned + recap), extract ONLY ONCE.",
+        "'Don't do X' / 'Cancel X' = NO action item. May be a decision."
+      ]
+    },
+    {
+      "id": "sprint-grooming",
+      "name": "Sprint / Backlog Grooming",
+      "description": "Sprint goal, user stories, estimates, dependencies, blockers, decisions, and risks",
+      "sections": [
+        { "key": "sprint_goal", "type": "sprint_goal", "label": "Sprint Goal" },
+        { "key": "user_stories", "type": "user_stories", "label": "User Stories Discussed" },
+        { "key": "story_points", "type": "story_points", "label": "Estimates" },
+        { "key": "dependencies", "type": "dependencies", "label": "Dependencies" },
+        { "key": "blockers", "type": "blockers", "label": "Blockers" },
+        { "key": "decisions", "type": "decisions", "label": "Decisions" },
+        { "key": "risks", "type": "risks", "label": "Risks" },
+        { "key": "next_steps", "type": "next_steps", "label": "Next Steps" }
+      ],
+      "cross_section_rules": [
+        "STORY vs TASK: User stories deliver user value ('As a user...'). Technical tasks go in action_items, not user_stories.",
+        "Bug stories, spikes, tech debt → still go in user_stories with appropriate role (user/team/developer).",
+        "Story DROPPED from sprint → do NOT extract as user_story. Capture as decision: 'Dropped X due to capacity'.",
+        "Story CARRIED OVER from last sprint → extract in user_stories with note 'carry-over' in acceptance_criteria.",
+        "If estimate CHANGES during discussion (5→8), use ONLY the FINAL agreed estimate in story_points.",
+        "If priority CHANGES (P2→P1), use ONLY the FINAL priority.",
+        "Sprint commitment ('team commits to these stories') = decision.",
+        "Definition of Ready/Done discussed → capture as decisions or constraints.",
+        "Velocity/capacity mentioned → capture in story_points as a row with item='Sprint Capacity'.",
+        "Release date → capture in constraints or sprint_goal text."
+      ]
+    },
+    {
+      "id": "stakeholder-interview",
+      "name": "Stakeholder Interview",
+      "description": "Pain points, current workflows, desired outcomes, assumptions, and constraints",
+      "sections": [
+        { "key": "summary", "type": "text", "label": "Summary" },
+        { "key": "stakeholders", "type": "stakeholders", "label": "Stakeholders" },
+        { "key": "pain_points", "type": "pain_points", "label": "Pain Points" },
+        { "key": "current_workflows", "type": "current_workflows", "label": "Current Workflows" },
+        { "key": "desired_outcomes", "type": "desired_outcomes", "label": "Desired Outcomes" },
+        { "key": "requirements", "type": "requirements", "label": "Requirements Identified" },
+        { "key": "assumptions", "type": "assumptions", "label": "Assumptions" },
+        { "key": "constraints", "type": "constraints", "label": "Constraints" },
+        { "key": "questions", "type": "questions", "label": "Follow-up Questions" }
+      ],
+      "cross_section_rules": [
+        "BUDGET AND TIMELINE — MANDATORY CONSTRAINTS (ZERO TOLERANCE):",
+        "If ANYONE mentions a budget number ('200,000 dollars', '50 lakh', '$500K') → it MUST appear in constraints.",
+        "If ANYONE mentions a timeline ('6 months', 'by December', 'Q3 deadline') → it MUST appear in constraints.",
+        "These are the #1 and #2 most important facts in any stakeholder interview. NEVER skip them.",
+        "Example: 'Budget is fixed at 200,000 dollars. Timeline is 6 months.' → TWO constraint items: 'Budget: $200,000' AND 'Timeline: 6 months'.",
+        "",
+        "NUMBERS ARE GOLD — NEVER DROP THEM:",
+        "Any number mentioned (budget, timeline, volume, percentage, headcount, duration) MUST appear in at least one section.",
+        "'Budget is 200,000 dollars' → constraints. '6 months timeline' → constraints. '200 invoices per day' → current_workflows. '5% error rate' → pain_points. '2 minutes target' → desired_outcomes.",
+        "If you extract an item but lose the number, you have FAILED. '15 minutes per invoice' ≠ 'time-consuming'.",
+        "",
+        "TECHNOLOGY CONSTRAINTS — USE EXACT WORDS:",
+        "'We cannot use any cloud service outside of AWS due to data residency laws' → constraint: 'Cannot use cloud services outside AWS (data residency requirement)'. Do NOT paraphrase to just 'no cloud' — preserve the specifics (which cloud is allowed, why).",
+        "",
+        "STAKEHOLDERS — SPEAKERS AND MENTIONED:",
+        "Extract both people IN the room AND teams/people MENTIONED as impacted. 'The IT team maintains the VPN' = IT Team is a stakeholder. 'Vendors wait 30 days' = Vendors are stakeholders.",
+        "",
+        "PAIN POINT vs REQUIREMENT vs DESIRED OUTCOME:",
+        "Pain point = the PROBLEM (what's wrong today): 'Manual data entry takes 15 min per invoice for 200 invoices daily' → pain_points.",
+        "Desired outcome = the GOAL with target metric: 'Reduce processing to 2 minutes per invoice' → desired_outcomes.",
+        "Requirement = the SOLUTION: 'Automated OCR scanning with human review step' → requirements.",
+        "One conversation often contains all three. Extract each to its correct section.",
+        "",
+        "THIRD-PARTY IMPACT IS A PAIN POINT:",
+        "'Vendors wait 30 days' or 'customers complaining' = pain point with external impact. ALWAYS extract.",
+        "",
+        "Requirement categories: functional ('system shall X'), non_functional ('99.9% uptime', 'under 2 seconds'), business_rule ('only managers can delete').",
+        "CONFLICTING opinions: If stakeholders disagree, capture BOTH.",
+        "Unknown speakers: Use role or 'Unknown Stakeholder'. Never skip."
+      ]
+    },
+    {
+      "id": "uat-demo-feedback",
+      "name": "UAT / Demo Feedback",
+      "description": "What was shown, feedback received, change requests, bugs found, and approvals",
+      "sections": [
+        { "key": "summary", "type": "text", "label": "Demo Summary" },
+        { "key": "key_topics", "type": "key_topics", "label": "Features Demonstrated" },
+        { "key": "feedback", "type": "feedback", "label": "Feedback Received" },
+        { "key": "change_requests", "type": "change_requests", "label": "Change Requests" },
+        { "key": "bugs_reported", "type": "bugs_reported", "label": "Bugs / Issues Found" },
+        { "key": "approvals", "type": "approvals", "label": "Approvals / Sign-offs" },
+        { "key": "action_items", "type": "action_items", "label": "Action Items" }
+      ],
+      "cross_section_rules": [
+        "FEEDBACK vs CHANGE REQUEST vs BUG — decision tree:",
+        "'This is great/slow/nice' (observation) → feedback. No action requested.",
+        "'Can you add/change/remove X?' (concrete ask) → change_requests ONLY.",
+        "'It doesn't work/nothing happens/error' (broken) → bugs_reported ONLY.",
+        "'Approved/ship it/looks good' (sign-off) → approvals.",
+        "'Good but fix X first' (conditional) → NOT approval. Extract as action_item.",
+        "Same issue from multiple people → MERGE into ONE feedback row with combined raised_by.",
+        "Performance complaints from multiple people OR fix requested → ALSO extract in bugs_reported.",
+        "Feedback + change request from same sentence: 'Search is great but add date filter' → feedback (positive) + change_request (add filter). Both.",
+        "BUG severity: Critical=blocks workflow. Major=broken but workaround. Minor=cosmetic. null=not stated.",
+        "NEVER bugs: preferences ('don't like color'), missing features ('no dark mode').",
+        "Vague issue reports ('there is an issue in X') → still extract as bug with null severity. Do NOT skip."
+      ]
+    }
+  ]
+}

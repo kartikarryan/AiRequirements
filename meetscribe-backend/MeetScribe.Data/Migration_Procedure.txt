@@ -1,0 +1,9 @@
+﻿step 1
+
+Add-Migration {Migration_Name}
+
+step 2
+
+Script-Migration -Idempotent -Output ".\MeetScribe.Data\Migrations\Sql\{script_name.sql}"
+
+

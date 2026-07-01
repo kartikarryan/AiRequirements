@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="MeetScribe.Ai/MeetScribe.Ai.csproj" Id="586b4937-f3ca-4d8d-afe5-705982ccf816" />
+  <Project Path="MeetScribe.Api/MeetScribe.Api.csproj" />
+  <Project Path="MeetScribe.Data/MeetScribe.Data.csproj" Id="5e4e09a7-5727-4f37-930f-e4215758a373" />
+  <Project Path="MeetScribe.Validators/MeetScribe.Validators.csproj" Id="15da30df-2c01-4430-9fcb-3ad892976e05" />
+  <Project Path="MeetScribe.ViewModels/MeetScribe.ViewModels.csproj" />
+</Solution>

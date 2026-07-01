@@ -1,0 +1,68 @@
+<!--
+  Icon Generator (Development Only)
+  ==================================
+  Open this file in a browser to generate PNG icons from the SVG below.
+  Right-click each canvas and "Save Image As" with the correct filename.
+
+  For production, use a proper icon designed in Figma or similar.
+-->
+<!DOCTYPE html>
+<html>
+<head><title>MeetScribe Icon Generator</title></head>
+<body>
+  <h2>MeetScribe Icon Generator</h2>
+  <p>Right-click each icon → "Save Image As" → save as the filename shown</p>
+
+  <div id="icons"></div>
+
+  <script>
+    const sizes = [16, 32, 48, 128];
+    const container = document.getElementById('icons');
+
+    sizes.forEach(size => {
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+
+      // Background circle
+      ctx.fillStyle = '#4f46e5';
+      ctx.beginPath();
+      ctx.arc(size/2, size/2, size/2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Microphone icon (simplified)
+      ctx.fillStyle = 'white';
+      const micWidth = size * 0.25;
+      const micHeight = size * 0.35;
+      const micX = (size - micWidth) / 2;
+      const micY = size * 0.2;
+
+      // Mic body
+      ctx.beginPath();
+      ctx.roundRect(micX, micY, micWidth, micHeight, micWidth/2);
+      ctx.fill();
+
+      // Mic stand
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = size * 0.06;
+      ctx.beginPath();
+      ctx.arc(size/2, micY + micHeight, micWidth * 0.8, 0, Math.PI);
+      ctx.stroke();
+
+      // Mic base
+      ctx.beginPath();
+      ctx.moveTo(size/2, micY + micHeight + micWidth * 0.8);
+      ctx.lineTo(size/2, size * 0.8);
+      ctx.stroke();
+
+      const div = document.createElement('div');
+      div.style.margin = '20px';
+      div.style.display = 'inline-block';
+      div.innerHTML = `<p><strong>icon-${size}.png</strong></p>`;
+      div.appendChild(canvas);
+      container.appendChild(div);
+    });
+  </script>
+</body>
+</html>

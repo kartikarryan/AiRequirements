@@ -1,0 +1,10 @@
+Replace this file with actual icon PNG files:
+- icon-16.png  (16x16 pixels)
+- icon-32.png  (32x32 pixels)
+- icon-48.png  (48x48 pixels)
+- icon-128.png (128x128 pixels)
+
+You can generate these from any SVG icon using tools like:
+- https://favicon.io/
+- Figma export
+- ImageMagick: convert icon.svg -resize 16x16 icon-16.png
