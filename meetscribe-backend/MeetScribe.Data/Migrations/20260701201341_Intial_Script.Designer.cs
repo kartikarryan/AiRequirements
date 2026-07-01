@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MeetScribe.Data.Migrations
 {
     [DbContext(typeof(MeetScribeDbContext))]
-    [Migration("20260629113255_Add_New_Column_ExpiredDate")]
-    partial class Add_New_Column_ExpiredDate
+    [Migration("20260701201341_Intial_Script")]
+    partial class Intial_Script
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,6 +25,53 @@ namespace MeetScribe.Data.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("MeetScribe.Data.Models.ExportedTicketEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ExternalTicketId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ExternalTicketUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("IterationPath")
+                        .HasColumnType("text");
+
+                    b.Property<int>("MeetingId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Project")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("WorkItemType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MeetingId");
+
+                    b.ToTable("ExportedTickets");
+                });
+
             modelBuilder.Entity("MeetScribe.Data.Models.IntegrationSettingEntity", b =>
                 {
                     b.Property<int>("Id")
@@ -33,37 +80,20 @@ namespace MeetScribe.Data.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("AccessToken")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("DefaultProject")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<string>("DefaultWorkItemType")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
-
-                    b.Property<string>("OrganizationUrl")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<DateTime?>("PatExpiryDate")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Provider")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
+
+                    b.Property<string>("SettingsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -162,6 +192,9 @@ namespace MeetScribe.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("LinkedProvider")
+                        .HasColumnType("text");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -173,6 +206,17 @@ namespace MeetScribe.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("Projects", (string)null);
+                });
+
+            modelBuilder.Entity("MeetScribe.Data.Models.ExportedTicketEntity", b =>
+                {
+                    b.HasOne("MeetScribe.Data.Models.MeetingEntity", "Meeting")
+                        .WithMany()
+                        .HasForeignKey("MeetingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Meeting");
                 });
 
             modelBuilder.Entity("MeetScribe.Data.Models.MeetingEntity", b =>

@@ -46,7 +46,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddMeetScribeApi(builder.Configuration);
 builder.Services.AddMeetScribeAi(builder.Configuration);
 builder.Services.AddMeetScribeData(builder.Configuration);
-builder.Logging.AddEventLog();
+
 var app = builder.Build();
 
 app.UseSwagger();
