@@ -8,7 +8,8 @@
 // -----------------------------------------------------------------------------
 //export const API_BASE_URL = 'http://10.175.197.100:2602';
 //export const API_BASE_URL = 'http://10.175.197.131:500';
-export const API_BASE_URL = 'http://localhost:5072';
+//export const API_BASE_URL = 'http://localhost:5072';
+export const API_BASE_URL = 'http://54.146.112.163:5000';
 
 export const REQUEST_TIMEOUT_MS = 600_000; // 10 min (1-hour audio can take 2-3 min to process)
 
