@@ -6,12 +6,21 @@
 // -----------------------------------------------------------------------------
 // Configuration
 // -----------------------------------------------------------------------------
-//export const API_BASE_URL = 'http://10.175.197.100:2602';
-//export const API_BASE_URL = 'http://10.175.197.131:500';
-//export const API_BASE_URL = 'http://localhost:5072';
-export const API_BASE_URL = 'https://gallery-iowa-sequence-aerospace.trycloudflare.com';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5072';
 
 export const REQUEST_TIMEOUT_MS = 600_000; // 10 min (1-hour audio can take 2-3 min to process)
+
+// -----------------------------------------------------------------------------
+// Auth Header
+// -----------------------------------------------------------------------------
+
+export function getAuthHeaders(): Record<string, string> {
+  const token = localStorage.getItem('meetscribe_access_token');
+  if (token) {
+    return { Authorization: `Bearer ${token}` };
+  }
+  return {};
+}
 
 // -----------------------------------------------------------------------------
 // Error Class

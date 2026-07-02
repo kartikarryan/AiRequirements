@@ -1,4 +1,5 @@
 using MeetScribe.Api.Managers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MeetScribe.Api.Controllers;
@@ -6,6 +7,7 @@ namespace MeetScribe.Api.Controllers;
 /// <summary>Provider settings — connect, test, disconnect, get projects/iterations/types.</summary>
 [Route("api/integrations")]
 [ApiController]
+[Authorize]
 public class IntegrationSettingsController : ControllerBase
 {
     private readonly IIntegrationSettingsManager _settingsManager;

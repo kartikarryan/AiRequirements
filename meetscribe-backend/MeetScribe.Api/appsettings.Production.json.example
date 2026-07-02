@@ -1,0 +1,11 @@
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=YOUR_RDS_ENDPOINT;Port=5432;Database=meetscribe_dev_db;Username=postgres;Password=YOUR_DB_PASSWORD"
+  },
+  "DeepgramSettings": {
+    "ApiKey": "YOUR_DEEPGRAM_API_KEY"
+  },
+  "AllowedOrigins": [
+    "https://YOUR_VERCEL_APP.vercel.app"
+  ]
+}

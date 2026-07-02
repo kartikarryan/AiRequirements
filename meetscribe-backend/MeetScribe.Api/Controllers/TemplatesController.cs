@@ -1,4 +1,5 @@
 using MeetScribe.Ai.Config;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MeetScribe.Api.Controllers;
@@ -12,6 +13,7 @@ namespace MeetScribe.Api.Controllers;
 /// </summary>
 [Route("api/templates")]
 [ApiController]
+[Authorize]
 public class TemplatesController : ControllerBase
 {
     private readonly ITemplateConfigLoader _configLoader;

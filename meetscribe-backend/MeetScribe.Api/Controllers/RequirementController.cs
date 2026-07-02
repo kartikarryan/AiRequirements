@@ -1,5 +1,6 @@
 ﻿using MeetScribe.Api.Managers;
 using MeetScribe.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.AspNetCore.Mvc;
 
@@ -7,6 +8,7 @@ namespace MeetScribe.Api.Controllers
 {
     [Route("api/requirements")]
     [ApiController]
+    [Authorize]
     public class RequirementController : ControllerBase
     {
         private readonly IRequirementManager _requirementManager;

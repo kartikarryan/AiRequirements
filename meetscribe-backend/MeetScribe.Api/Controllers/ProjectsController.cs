@@ -1,11 +1,13 @@
 using MeetScribe.Api.Managers;
 using MeetScribe.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MeetScribe.Api.Controllers;
 
 [Route("api/projects")]
 [ApiController]
+[Authorize]
 public class ProjectsController : ControllerBase
 {
     private readonly IProjectManager _projectManager;

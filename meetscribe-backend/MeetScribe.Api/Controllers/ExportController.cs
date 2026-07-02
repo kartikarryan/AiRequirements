@@ -1,5 +1,6 @@
 using MeetScribe.Api.Managers;
 using MeetScribe.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MeetScribe.Api.Controllers;
@@ -7,6 +8,7 @@ namespace MeetScribe.Api.Controllers;
 /// <summary>Ticket export — projects, iterations, types, batch create, export history.</summary>
 [Route("api/integrations")]
 [ApiController]
+[Authorize]
 public class ExportController : ControllerBase
 {
     private readonly IExportManager _exportManager;

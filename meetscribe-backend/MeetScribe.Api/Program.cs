@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using MeetScribe.Ai;
 using MeetScribe.Api;
 using MeetScribe.Api.Middleware;
@@ -28,23 +30,44 @@ builder.Services.AddControllers(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// CORS
+// CORS — reads allowed origins from config (appsettings.json or env vars)
+var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
+    ?? ["http://localhost:5173", "http://localhost:3000"];
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy
-            .WithOrigins(
-                "http://localhost:5173",
-                "http://localhost:3000",
-                "http://10.175.197.131:501",
-                "http://10.175.197.100:2601",
-                "https://ai-requirements-xi.vercel.app",
-                "https://gallery-iowa-sequence-aerospace.trycloudflare.com"
-            )
+        policy.WithOrigins(allowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
+});
+
+// AWS Cognito JWT Authentication
+var cognitoSettings = builder.Configuration.GetSection("CognitoSettings");
+var region = cognitoSettings["Region"] ?? "us-east-1";
+var userPoolId = cognitoSettings["UserPoolId"] ?? "us-east-1_PLACEHOLDER";
+var clientId = cognitoSettings["ClientId"] ?? "PLACEHOLDER_CLIENT_ID";
+var authority = $"https://cognito-idp.{region}.amazonaws.com/{userPoolId}";
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.Authority = authority;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        ValidateIssuer = true,
+        ValidIssuer = authority,
+        ValidateAudience = true,
+        ValidAudience = clientId,
+        ValidateLifetime = true,
+    };
 });
 
 builder.Services.AddMeetScribeApi(builder.Configuration);
@@ -68,6 +91,7 @@ if (app.Environment.IsDevelopment())
     // app.UseHttpsRedirection();
 }
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

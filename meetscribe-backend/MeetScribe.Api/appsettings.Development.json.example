@@ -1,0 +1,11 @@
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=localhost;Port=5432;Database=MeetScribeDev;Username=postgres;Password=YOUR_PASSWORD"
+  },
+  "DeepgramSettings": {
+    "ApiKey": "YOUR_DEEPGRAM_API_KEY"
+  },
+  "OpenAiSettings": {
+    "ApiKey": "YOUR_OPENAI_KEY (optional — only if using OpenAI provider)"
+  }
+}

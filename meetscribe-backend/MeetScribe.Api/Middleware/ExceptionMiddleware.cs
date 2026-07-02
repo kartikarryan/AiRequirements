@@ -100,8 +100,7 @@ public class ExceptionMiddleware
                     "Unhandled exception. Path={Path} Method={Method} Type={ExceptionType}",
                     context.Request.Path, context.Request.Method, exception.GetType().Name);
                 apiResponse.StatusCode = (int)HttpStatusCode.InternalServerError;
-                //apiResponse.Message = "Something went wrong. Please try again.";
-                apiResponse.Message = exception.ToString();
+                apiResponse.Message = "Something went wrong. Please try again.";
                 break;
         }
 
