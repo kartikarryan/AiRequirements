@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /auth/
+Disallow: /projects/
+Disallow: /settings
+
+Sitemap: https://meetscribe.com/sitemap.xml
