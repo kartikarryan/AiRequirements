@@ -8,36 +8,39 @@ var builder = WebApplication.CreateBuilder(args);
 // Increase limits for large audio file uploads (200 MB, 10 min timeout)
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.Limits.MaxRequestBodySize = 210 * 1024 * 1024; // 210 MB (slightly over 200 MB limit)
+    options.Limits.MaxRequestBodySize = 210 * 1024 * 1024;
     options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(10);
     options.Limits.RequestHeadersTimeout = TimeSpan.FromMinutes(10);
 });
 
-// Add services to the container.
-
+// Add services
 builder.Services.AddControllers(options =>
 {
     options.MaxModelBindingCollectionSize = int.MaxValue;
-}).AddJsonOptions(options =>
+})
+.AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
-    options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+    options.JsonSerializerOptions.Converters.Add(
+        new System.Text.Json.Serialization.JsonStringEnumConverter());
 });
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// CORS — allows React frontend (localhost:5173) to call this API
+// CORS
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:5173",   // Vite dev server
-                "http://localhost:3000" ,   // Alternative React port
+        policy
+            .WithOrigins(
+                "http://localhost:5173",
+                "http://localhost:3000",
                 "http://10.175.197.131:501",
-                "http://10.175.197.100:2601",// Deployed 131 React port
                 "http://10.175.197.100:2601",
-                "https://ai-requirements-xi.vercel.app/"
+                "https://ai-requirements-xi.vercel.app",
+                "https://gallery-iowa-sequence-aerospace.trycloudflare.com"
             )
             .AllowAnyHeader()
             .AllowAnyMethod();
@@ -50,17 +53,19 @@ builder.Services.AddMeetScribeData(builder.Configuration);
 
 var app = builder.Build();
 
+// Swagger
 app.UseSwagger();
 app.UseSwaggerUI();
 
+// Enable CORS
 app.UseCors();
 
-// Global exception handler — must be early in pipeline to catch all errors
+// Global exception middleware
 app.UseMiddleware<ExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
-    //app.UseHttpsRedirection();
+    // app.UseHttpsRedirection();
 }
 
 app.UseAuthorization();
