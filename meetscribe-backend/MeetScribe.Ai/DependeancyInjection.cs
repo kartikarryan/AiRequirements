@@ -17,6 +17,7 @@ public static class DependeancyInjection
         services.Configure<DeepgramSettings>(configuration.GetSection("DeepgramSettings"));
         services.Configure<OpenAISettings>(configuration.GetSection("OpenAiSettings"));
         services.Configure<BedrockSettings>(configuration.GetSection("BedrockSettings"));
+        services.Configure<AnthropicSettings>(configuration.GetSection("AnthropicSettings"));
 
         // Config loader — singleton (loads once, caches in memory)
         services.AddSingleton<ITemplateConfigLoader, TemplateConfigLoader>();
@@ -28,6 +29,9 @@ public static class DependeancyInjection
         {
             case "openai":
                 services.AddScoped<IAiClient, OpenAiClient>();
+                break;
+            case "anthropic":
+                services.AddScoped<IAiClient, AnthropicClient>();
                 break;
             case "bedrock":
             default:
