@@ -64,9 +64,20 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidateIssuer = true,
         ValidIssuer = authority,
-        ValidateAudience = true,
-        ValidAudience = clientId,
+        ValidateAudience = false,
         ValidateLifetime = true,
+    };
+    options.Events = new JwtBearerEvents
+    {
+        OnTokenValidated = context =>
+        {
+            var claimClientId = context.Principal?.FindFirst("client_id")?.Value;
+            if (claimClientId != clientId)
+            {
+                context.Fail("Invalid client_id");
+            }
+            return Task.CompletedTask;
+        }
     };
 });
 

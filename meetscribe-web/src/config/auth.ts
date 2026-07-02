@@ -8,15 +8,56 @@ export const AUTH_CONFIG = {
   scopes: ['openid', 'email', 'profile'],
 };
 
-export function getLoginUrl(): string {
-  const params = new URLSearchParams({
-    client_id: AUTH_CONFIG.clientId,
-    response_type: 'code',
-    scope: AUTH_CONFIG.scopes.join(' '),
-    redirect_uri: AUTH_CONFIG.redirectUri,
-    identity_provider: 'Google',
-  });
-  return `https://${AUTH_CONFIG.domain}/oauth2/authorize?${params.toString()}`;
+// PKCE helpers
+function generateRandomString(length: number): string {
+  const array = new Uint8Array(length);
+  crypto.getRandomValues(array);
+  return Array.from(array, (byte) => byte.toString(16).padStart(2, '0')).join('').slice(0, length);
+}
+
+async function sha256(plain: string): Promise<ArrayBuffer> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(plain);
+  return crypto.subtle.digest('SHA-256', data);
+}
+
+function base64UrlEncode(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  bytes.forEach((b) => (binary += String.fromCharCode(b)));
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+export async function getLoginUrl(): Promise<string> {
+  try {
+    const codeVerifier = generateRandomString(64);
+    sessionStorage.setItem('pkce_code_verifier', codeVerifier);
+
+    const challengeBuffer = await sha256(codeVerifier);
+    const codeChallenge = base64UrlEncode(challengeBuffer);
+
+    const params = new URLSearchParams({
+      client_id: AUTH_CONFIG.clientId,
+      response_type: 'code',
+      scope: AUTH_CONFIG.scopes.join(' '),
+      redirect_uri: AUTH_CONFIG.redirectUri,
+      identity_provider: 'Google',
+      code_challenge_method: 'S256',
+      code_challenge: codeChallenge,
+    });
+    return `https://${AUTH_CONFIG.domain}/oauth2/authorize?${params.toString()}`;
+  } catch {
+    // Fallback without PKCE if crypto.subtle unavailable
+    sessionStorage.removeItem('pkce_code_verifier');
+    const params = new URLSearchParams({
+      client_id: AUTH_CONFIG.clientId,
+      response_type: 'code',
+      scope: AUTH_CONFIG.scopes.join(' '),
+      redirect_uri: AUTH_CONFIG.redirectUri,
+      identity_provider: 'Google',
+    });
+    return `https://${AUTH_CONFIG.domain}/oauth2/authorize?${params.toString()}`;
+  }
 }
 
 export function getLogoutUrl(): string {
@@ -28,21 +69,32 @@ export function getLogoutUrl(): string {
 }
 
 export async function exchangeCodeForTokens(code: string): Promise<TokenResponse> {
+  const codeVerifier = sessionStorage.getItem('pkce_code_verifier');
+
+  const body: Record<string, string> = {
+    grant_type: 'authorization_code',
+    client_id: AUTH_CONFIG.clientId,
+    code,
+    redirect_uri: AUTH_CONFIG.redirectUri,
+  };
+
+  if (codeVerifier) {
+    body.code_verifier = codeVerifier;
+  }
+
   const response = await fetch(`https://${AUTH_CONFIG.domain}/oauth2/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      grant_type: 'authorization_code',
-      client_id: AUTH_CONFIG.clientId,
-      code,
-      redirect_uri: AUTH_CONFIG.redirectUri,
-    }),
+    body: new URLSearchParams(body),
   });
 
   if (!response.ok) {
-    throw new Error('Failed to exchange authorization code for tokens');
+    const errorBody = await response.text();
+    console.error('Token exchange error:', response.status, errorBody);
+    throw new Error(`Token exchange failed: ${errorBody}`);
   }
 
+  sessionStorage.removeItem('pkce_code_verifier');
   return response.json();
 }
 

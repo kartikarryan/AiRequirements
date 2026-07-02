@@ -16,7 +16,7 @@ export function LandingPage() {
             </div>
             <span className="text-xl font-bold text-slate-900">MeetScribe</span>
           </a>
-          <button onClick={login} className="btn-primary" aria-label="Sign in with Google">
+          <button onClick={() => login()} className="btn-primary" aria-label="Sign in with Google">
             Sign in with Google
           </button>
         </nav>
@@ -43,7 +43,7 @@ export function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button onClick={login} className="w-full sm:w-auto px-8 py-3.5 bg-blue-600 text-white rounded-xl text-base font-semibold hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-lg shadow-blue-600/20 flex items-center justify-center gap-3">
+            <button onClick={() => login()} className="w-full sm:w-auto px-8 py-3.5 bg-blue-600 text-white rounded-xl text-base font-semibold hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-lg shadow-blue-600/20 flex items-center justify-center gap-3">
               <GoogleIcon />
               Continue with Google
             </button>
@@ -193,7 +193,7 @@ export function LandingPage() {
           <p className="text-lg text-blue-100 mb-8">
             Join teams already saving hours every sprint with AI-powered requirement extraction.
           </p>
-          <button onClick={login} className="px-8 py-3.5 bg-white text-blue-600 rounded-xl text-base font-semibold hover:bg-blue-50 transition-colors shadow-lg flex items-center justify-center gap-3 mx-auto">
+          <button onClick={() => login()} className="px-8 py-3.5 bg-white text-blue-600 rounded-xl text-base font-semibold hover:bg-blue-50 transition-colors shadow-lg flex items-center justify-center gap-3 mx-auto">
             <GoogleIcon />
             Get Started with Google
           </button>

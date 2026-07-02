@@ -1,11 +1,9 @@
 /**
  * Integration Service — config-driven, multi-provider.
- * Works with ANY provider — reads config for fields, calls provider-specific endpoints.
  */
 
-import { API_BASE_URL, ApiError } from './apiClient';
+import { ApiError, api } from './apiClient';
 
-/** Provider definition from integrations-config.json */
 export interface ProviderConfig {
   id: string;
   name: string;
@@ -26,7 +24,6 @@ export interface ProviderField {
   helpLink?: string;
 }
 
-/** Connected provider from GET /api/integrations */
 export interface ConnectedProvider {
   provider: string;
   settings: Record<string, string>;
@@ -35,68 +32,52 @@ export interface ConnectedProvider {
   updatedAt: string | null;
 }
 
-/** Gets integrations config (provider definitions with fields) */
 export async function getIntegrationsConfig(): Promise<ProviderConfig[]> {
-  const response = await fetch(`${API_BASE_URL}/api/integrations/config`);
+  const response = await api.get('/api/integrations/config');
   if (!response.ok) return [];
   const body = await response.json();
   return body?.data || body?.providers || [];
 }
 
-/** Gets all connected integrations */
 export async function getConnectedIntegrations(): Promise<{ configured: boolean; data: ConnectedProvider[] }> {
-  const response = await fetch(`${API_BASE_URL}/api/integrations`);
+  const response = await api.get('/api/integrations');
   if (!response.ok) return { configured: false, data: [] };
   return await response.json();
 }
 
-/** Gets a specific provider's connection status */
 export async function getProviderStatus(provider: string): Promise<{ configured: boolean; settings?: Record<string, string>; createdAt?: string }> {
-  const response = await fetch(`${API_BASE_URL}/api/integrations/${provider}`);
+  const response = await api.get(`/api/integrations/${provider}`);
   if (!response.ok) return { configured: false };
   return await response.json();
 }
 
-/** Tests connection for a provider */
 export async function testProviderConnection(provider: string, settings: Record<string, string>): Promise<{ success: boolean; message: string; projects?: string[] }> {
-  const response = await fetch(`${API_BASE_URL}/api/integrations/${provider}/test`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(settings),
-  });
+  const response = await api.post(`/api/integrations/${provider}/test`, settings);
   return await response.json();
 }
 
-/** Saves provider settings */
 export async function saveProviderSettings(provider: string, settings: Record<string, string>): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/api/integrations/${provider}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(settings),
-  });
+  const response = await api.post(`/api/integrations/${provider}`, settings);
   if (!response.ok) {
     const body = await response.json();
     throw new ApiError(response.status, body?.message || 'Failed to save settings.');
   }
 }
 
-/** Disconnects a provider */
 export async function disconnectProvider(provider: string): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/api/integrations/${provider}`, { method: 'DELETE' });
+  const response = await api.delete(`/api/integrations/${provider}`);
   if (!response.ok) throw new ApiError(response.status, 'Failed to disconnect.');
 }
 
-/** Gets projects for a provider */
 export async function getProviderProjects(provider: string): Promise<string[]> {
-  const response = await fetch(`${API_BASE_URL}/api/integrations/${provider}/projects`);
+  const response = await api.get(`/api/integrations/${provider}/projects`);
   if (!response.ok) return [];
   const body = await response.json();
   return body?.data || [];
 }
 
-/** Gets iterations for a project */
 export async function getProviderIterations(provider: string, project: string): Promise<string[]> {
-  const response = await fetch(`${API_BASE_URL}/api/integrations/${provider}/iterations?project=${encodeURIComponent(project)}`);
+  const response = await api.get(`/api/integrations/${provider}/iterations?project=${encodeURIComponent(project)}`);
   if (!response.ok) return [];
   const body = await response.json();
   return body?.data || [];

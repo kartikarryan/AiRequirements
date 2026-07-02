@@ -1,12 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { exchangeCodeForTokens, parseIdToken } from '../config/auth';
+import { STORAGE_KEYS } from '../services/apiClient';
 
 export function AuthCallback() {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
+  const exchangeAttempted = useRef(false);
 
   useEffect(() => {
+    if (exchangeAttempted.current) return;
+    exchangeAttempted.current = true;
+
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
     const errorParam = params.get('error');
@@ -24,19 +29,19 @@ export function AuthCallback() {
     exchangeCodeForTokens(code)
       .then((tokens) => {
         const expiresAt = Date.now() + tokens.expires_in * 1000;
-        localStorage.setItem('meetscribe_access_token', tokens.access_token);
-        localStorage.setItem('meetscribe_id_token', tokens.id_token);
+        localStorage.setItem(STORAGE_KEYS.accessToken, tokens.access_token);
+        localStorage.setItem(STORAGE_KEYS.idToken, tokens.id_token);
         if (tokens.refresh_token) {
-          localStorage.setItem('meetscribe_refresh_token', tokens.refresh_token);
+          localStorage.setItem(STORAGE_KEYS.refreshToken, tokens.refresh_token);
         }
-        localStorage.setItem('meetscribe_expires_at', expiresAt.toString());
+        localStorage.setItem(STORAGE_KEYS.expiresAt, expiresAt.toString());
 
         parseIdToken(tokens.id_token);
-        navigate('/', { replace: true });
-        window.location.reload();
+        window.location.replace('/');
       })
-      .catch(() => {
-        setError('Failed to complete sign-in. Please try again.');
+      .catch((err) => {
+        console.error('Token exchange failed:', err);
+        setError(err.message || 'Failed to complete sign-in. Please try again.');
       });
   }, [navigate]);
 
@@ -52,7 +57,7 @@ export function AuthCallback() {
           <h2 className="text-lg font-semibold text-slate-900 mb-2">Sign-in Failed</h2>
           <p className="text-sm text-slate-600 mb-6">{error}</p>
           <a href="/" className="btn-primary inline-block">
-            Back to Home
+            Try Again
           </a>
         </div>
       </div>

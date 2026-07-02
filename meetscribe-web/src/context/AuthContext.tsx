@@ -1,35 +1,47 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import {
   CognitoUser,
   TokenResponse,
   parseIdToken,
   refreshAccessToken,
   getLoginUrl,
-  getLogoutUrl,
 } from '../config/auth';
+import { STORAGE_KEYS } from '../services/apiClient';
 
 interface AuthState {
   user: CognitoUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   accessToken: string | null;
-  login: () => void;
+  login: () => Promise<void>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
-const STORAGE_KEYS = {
-  accessToken: 'meetscribe_access_token',
-  idToken: 'meetscribe_id_token',
-  refreshToken: 'meetscribe_refresh_token',
-  expiresAt: 'meetscribe_expires_at',
-};
+function readTokensFromStorage() {
+  const idToken = localStorage.getItem(STORAGE_KEYS.idToken);
+  const accessToken = localStorage.getItem(STORAGE_KEYS.accessToken);
+  const expiresAt = localStorage.getItem(STORAGE_KEYS.expiresAt);
+  const refreshToken = localStorage.getItem(STORAGE_KEYS.refreshToken);
+
+  if (idToken && accessToken && expiresAt && Date.now() < Number(expiresAt)) {
+    return { user: parseIdToken(idToken), accessToken, needsRefresh: false };
+  }
+
+  if (refreshToken) {
+    return { user: null, accessToken: null, needsRefresh: true };
+  }
+
+  return { user: null, accessToken: null, needsRefresh: false };
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<CognitoUser | null>(null);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const stored = readTokensFromStorage();
+  const [user, setUser] = useState<CognitoUser | null>(stored.user);
+  const [accessToken, setAccessToken] = useState<string | null>(stored.accessToken);
+  const [isLoading, setIsLoading] = useState(stored.needsRefresh);
+  const didRefresh = useRef(false);
 
   const clearSession = useCallback(() => {
     Object.values(STORAGE_KEYS).forEach((key) => localStorage.removeItem(key));
@@ -37,60 +49,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAccessToken(null);
   }, []);
 
-  const setSession = useCallback((tokens: TokenResponse) => {
-    const expiresAt = Date.now() + tokens.expires_in * 1000;
-    localStorage.setItem(STORAGE_KEYS.accessToken, tokens.access_token);
-    localStorage.setItem(STORAGE_KEYS.idToken, tokens.id_token);
-    if (tokens.refresh_token) {
-      localStorage.setItem(STORAGE_KEYS.refreshToken, tokens.refresh_token);
-    }
-    localStorage.setItem(STORAGE_KEYS.expiresAt, expiresAt.toString());
+  useEffect(() => {
+    if (!stored.needsRefresh || didRefresh.current) return;
+    didRefresh.current = true;
 
-    setAccessToken(tokens.access_token);
-    setUser(parseIdToken(tokens.id_token));
-  }, []);
-
-  const tryRefresh = useCallback(async () => {
     const refreshToken = localStorage.getItem(STORAGE_KEYS.refreshToken);
     if (!refreshToken) {
-      clearSession();
-      return;
-    }
-    try {
-      const tokens = await refreshAccessToken(refreshToken);
-      setSession(tokens);
-    } catch {
-      clearSession();
-    }
-  }, [clearSession, setSession]);
-
-  useEffect(() => {
-    const idToken = localStorage.getItem(STORAGE_KEYS.idToken);
-    const storedAccessToken = localStorage.getItem(STORAGE_KEYS.accessToken);
-    const expiresAt = localStorage.getItem(STORAGE_KEYS.expiresAt);
-
-    if (!idToken || !storedAccessToken || !expiresAt) {
       setIsLoading(false);
       return;
     }
 
-    if (Date.now() > Number(expiresAt)) {
-      tryRefresh().finally(() => setIsLoading(false));
-      return;
+    refreshAccessToken(refreshToken)
+      .then((tokens: TokenResponse) => {
+        const expiresAt = Date.now() + tokens.expires_in * 1000;
+        localStorage.setItem(STORAGE_KEYS.accessToken, tokens.access_token);
+        localStorage.setItem(STORAGE_KEYS.idToken, tokens.id_token);
+        if (tokens.refresh_token) {
+          localStorage.setItem(STORAGE_KEYS.refreshToken, tokens.refresh_token);
+        }
+        localStorage.setItem(STORAGE_KEYS.expiresAt, expiresAt.toString());
+        setAccessToken(tokens.access_token);
+        setUser(parseIdToken(tokens.id_token));
+      })
+      .catch(() => {
+        clearSession();
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, []);
+
+  const login = async () => {
+    try {
+      const url = await getLoginUrl();
+      window.location.assign(url);
+    } catch (err) {
+      console.error('Login redirect failed:', err);
     }
-
-    setUser(parseIdToken(idToken));
-    setAccessToken(storedAccessToken);
-    setIsLoading(false);
-  }, [tryRefresh]);
-
-  const login = () => {
-    window.location.href = getLoginUrl();
   };
 
   const logout = () => {
     clearSession();
-    window.location.href = getLogoutUrl();
   };
 
   return (

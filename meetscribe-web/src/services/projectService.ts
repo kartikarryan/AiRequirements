@@ -2,7 +2,7 @@
  * Project Service — CRUD for project folders.
  */
 
-import { API_BASE_URL, ApiError } from './apiClient';
+import { ApiError, api } from './apiClient';
 
 export interface Project {
   id: number;
@@ -14,7 +14,7 @@ export interface Project {
 }
 
 export async function getAllProjects(): Promise<Project[]> {
-  const response = await fetch(`${API_BASE_URL}/api/projects`);
+  const response = await api.get('/api/projects');
   if (!response.ok) {
     throw new ApiError(response.status, 'Failed to load projects.');
   }
@@ -23,11 +23,7 @@ export async function getAllProjects(): Promise<Project[]> {
 }
 
 export async function createProject(name: string, linkedProvider?: string): Promise<Project> {
-  const response = await fetch(`${API_BASE_URL}/api/projects`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, linkedProvider: linkedProvider || null }),
-  });
+  const response = await api.post('/api/projects', { name, linkedProvider: linkedProvider || null });
 
   if (response.status === 409) {
     const body = await response.json();
@@ -44,9 +40,7 @@ export async function createProject(name: string, linkedProvider?: string): Prom
 }
 
 export async function deleteProject(projectId: number): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/api/projects/${projectId}`, {
-    method: 'DELETE',
-  });
+  const response = await api.delete(`/api/projects/${projectId}`);
 
   if (response.status === 409) {
     const body = await response.json();

@@ -3,11 +3,8 @@
  */
 
 import { ExtractionResult } from '../types/extraction';
-import { API_BASE_URL, REQUEST_TIMEOUT_MS, ApiError, parseResponseBody, getDefaultErrorMessage } from './apiClient';
+import { REQUEST_TIMEOUT_MS, ApiError, parseResponseBody, getDefaultErrorMessage, api } from './apiClient';
 
-/**
- * Uploads audio file and waits for extraction to complete.
- */
 export async function uploadAndExtract(
   file: File,
   templateId: string,
@@ -28,11 +25,7 @@ export async function uploadAndExtract(
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/requirements`, {
-      method: 'POST',
-      body: formData,
-      signal: controller.signal,
-    });
+    const response = await api.upload('/api/requirements', formData, controller.signal);
 
     clearTimeout(timeoutId);
 
@@ -71,21 +64,12 @@ export async function uploadAndExtract(
   }
 }
 
-/**
- * Re-runs AI extraction on existing transcript (optionally with different template).
- * POST /api/meetings/{id}/retry
- */
 export async function retryExtraction(meetingId: number, templateId?: string): Promise<void> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/meetings/${meetingId}/retry`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ templateId: templateId || null }),
-      signal: controller.signal,
-    });
+    const response = await api.post(`/api/meetings/${meetingId}/retry`, { templateId: templateId || null });
 
     clearTimeout(timeoutId);
 

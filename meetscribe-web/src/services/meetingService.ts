@@ -1,26 +1,15 @@
 /**
  * Meeting Service — CRUD operations for meeting records.
- *
- * Also re-exports from other services for backward compatibility
- * with existing component imports.
  */
 
-import { API_BASE_URL, ApiError, parseResponseBody } from './apiClient';
+import { ApiError, parseResponseBody, api } from './apiClient';
 
-// Re-exports so existing imports don't break
 export { ApiError } from './apiClient';
 export { uploadAndExtract, retryExtraction } from './extractionService';
 export { getTemplatesConfig } from './templateService';
 
-/**
- * Fetches meetings filtered by projectId.
- * GET /api/meetings?projectId={id}
- *
- * projectId = 0 → uncategorized meetings
- * projectId > 0 → meetings for that project
- */
 export async function getMeetingsByProject(projectId: number): Promise<any[]> {
-  const response = await fetch(`${API_BASE_URL}/api/meetings?projectId=${projectId}`);
+  const response = await api.get(`/api/meetings?projectId=${projectId}`);
   const body = await parseResponseBody<any[]>(response);
 
   if (!response.ok) {
@@ -30,14 +19,10 @@ export async function getMeetingsByProject(projectId: number): Promise<any[]> {
   return body?.data || [];
 }
 
-/**
- * Searches across meeting names, transcripts, and extraction content.
- * GET /api/meetings/search?query={query}&projectId={projectId}
- */
 export async function searchMeetings(query: string, projectId: number): Promise<any[]> {
   const params = new URLSearchParams({ query, projectId: projectId.toString() });
 
-  const response = await fetch(`${API_BASE_URL}/api/meetings/search?${params}`);
+  const response = await api.get(`/api/meetings/search?${params}`);
   const body = await parseResponseBody<any[]>(response);
 
   if (!response.ok) {
@@ -47,12 +32,8 @@ export async function searchMeetings(query: string, projectId: number): Promise<
   return body?.data || [];
 }
 
-/**
- * Fetches all meetings (no filter).
- * GET /api/meetings
- */
 export async function getAllMeetings(): Promise<any[]> {
-  const response = await fetch(`${API_BASE_URL}/api/meetings`);
+  const response = await api.get('/api/meetings');
   const body = await parseResponseBody<any[]>(response);
 
   if (!response.ok) {
@@ -62,12 +43,8 @@ export async function getAllMeetings(): Promise<any[]> {
   return body?.data || [];
 }
 
-/**
- * Fetches full meeting details (including extraction result JSON).
- * GET /api/meetings/{id}
- */
 export async function getMeetingById(meetingId: number): Promise<any> {
-  const response = await fetch(`${API_BASE_URL}/api/meetings/${meetingId}`);
+  const response = await api.get(`/api/meetings/${meetingId}`);
   const body = await parseResponseBody<any>(response);
 
   if (!response.ok) {
@@ -77,16 +54,8 @@ export async function getMeetingById(meetingId: number): Promise<any> {
   return body?.data || null;
 }
 
-/**
- * Saves user-edited extraction result.
- * PUT /api/meetings/{id}/extraction
- */
 export async function saveEditedExtraction(meetingId: number, editedResultJson: string): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/api/meetings/${meetingId}/extraction`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ editedResultJson }),
-  });
+  const response = await api.put(`/api/meetings/${meetingId}/extraction`, { editedResultJson });
 
   if (!response.ok) {
     const body = await parseResponseBody<any>(response);
@@ -94,14 +63,8 @@ export async function saveEditedExtraction(meetingId: number, editedResultJson: 
   }
 }
 
-/**
- * Deletes a meeting by ID.
- * DELETE /api/meetings/{id}
- */
 export async function deleteMeeting(meetingId: number): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/api/meetings/${meetingId}`, {
-    method: 'DELETE',
-  });
+  const response = await api.delete(`/api/meetings/${meetingId}`);
 
   if (!response.ok) {
     const body = await parseResponseBody<any>(response);

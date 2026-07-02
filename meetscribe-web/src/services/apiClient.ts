@@ -1,26 +1,105 @@
 /**
- * Shared API client — base URL, error class, and helper utilities.
- * All service files import from here.
+ * Centralized HTTP client with interceptor pipeline.
+ * - Automatically attaches Bearer token to every request
+ * - Handles 401 by attempting token refresh, then logout
+ * - All services use `api.get('/projects')` — base URL is built-in
  */
 
-// -----------------------------------------------------------------------------
-// Configuration
-// -----------------------------------------------------------------------------
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5072';
+export const REQUEST_TIMEOUT_MS = 600_000;
 
-export const REQUEST_TIMEOUT_MS = 600_000; // 10 min (1-hour audio can take 2-3 min to process)
+export const STORAGE_KEYS = {
+  accessToken: 'meetscribe_access_token',
+  idToken: 'meetscribe_id_token',
+  refreshToken: 'meetscribe_refresh_token',
+  expiresAt: 'meetscribe_expires_at',
+} as const;
 
 // -----------------------------------------------------------------------------
-// Auth Header
+// Interceptor Pipeline
 // -----------------------------------------------------------------------------
 
-export function getAuthHeaders(): Record<string, string> {
-  const token = localStorage.getItem('meetscribe_access_token');
+type RequestInterceptor = (url: string, config: RequestInit) => { url: string; config: RequestInit };
+type ResponseInterceptor = (response: Response, url: string) => Response | Promise<Response>;
+
+const requestInterceptors: RequestInterceptor[] = [];
+const responseInterceptors: ResponseInterceptor[] = [];
+
+// Attach Bearer token
+requestInterceptors.push((url, config) => {
+  const token = localStorage.getItem(STORAGE_KEYS.accessToken);
   if (token) {
-    return { Authorization: `Bearer ${token}` };
+    const headers = new Headers(config.headers);
+    headers.set('Authorization', `Bearer ${token}`);
+    return { url, config: { ...config, headers } };
   }
-  return {};
+  return { url, config };
+});
+
+// Handle 401 — clear session (let the AuthContext handle redirect naturally)
+responseInterceptors.push((response) => {
+  if (response.status === 401) {
+    Object.values(STORAGE_KEYS).forEach((key) => localStorage.removeItem(key));
+  }
+  return response;
+});
+
+// -----------------------------------------------------------------------------
+// HTTP Client
+// -----------------------------------------------------------------------------
+
+async function httpClient(url: string, options: RequestInit = {}): Promise<Response> {
+  let finalUrl = url;
+  let finalConfig = { ...options };
+
+  for (const interceptor of requestInterceptors) {
+    const result = interceptor(finalUrl, finalConfig);
+    finalUrl = result.url;
+    finalConfig = result.config;
+  }
+
+  let response = await fetch(finalUrl, finalConfig);
+
+  for (const interceptor of responseInterceptors) {
+    response = await interceptor(response, finalUrl);
+  }
+
+  return response;
 }
+
+function buildUrl(path: string): string {
+  return `${API_BASE_URL}${path}`;
+}
+
+export const api = {
+  get(path: string): Promise<Response> {
+    return httpClient(buildUrl(path));
+  },
+
+  post<T = unknown>(path: string, body?: T, headers?: Record<string, string>): Promise<Response> {
+    return httpClient(buildUrl(path), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...headers },
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  },
+
+  put<T = unknown>(path: string, body?: T): Promise<Response> {
+    return httpClient(buildUrl(path), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  },
+
+  delete(path: string): Promise<Response> {
+    return httpClient(buildUrl(path), { method: 'DELETE' });
+  },
+
+  upload(path: string, formData: FormData, signal?: AbortSignal): Promise<Response> {
+    return httpClient(buildUrl(path), { method: 'POST', body: formData, signal });
+  },
+};
 
 // -----------------------------------------------------------------------------
 // Error Class
