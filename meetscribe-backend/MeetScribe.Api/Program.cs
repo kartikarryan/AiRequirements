@@ -36,7 +36,8 @@ builder.Services.AddCors(options =>
                 "http://localhost:3000" ,   // Alternative React port
                 "http://10.175.197.131:501",
                 "http://10.175.197.100:2601",// Deployed 131 React port
-                "http://10.175.197.100:2601"
+                "http://10.175.197.100:2601",
+                "https://ai-requirements-xi.vercel.app/"
             )
             .AllowAnyHeader()
             .AllowAnyMethod();
