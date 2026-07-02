@@ -14,6 +14,9 @@ public class IntegrationSettingEntity
 {
     public int Id { get; set; }
 
+    public int UserId { get; set; }
+    public UserEntity? User { get; set; }
+
     /// <summary>Provider ID: "AzureDevOps", "Jira", "Linear"</summary>
     public string Provider { get; set; } = string.Empty;
 

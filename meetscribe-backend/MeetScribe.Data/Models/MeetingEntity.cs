@@ -8,6 +8,9 @@ public class MeetingEntity
 {
     public int Id { get; set; }
 
+    public int UserId { get; set; }
+    public UserEntity? User { get; set; }
+
     /// <summary>User-provided meeting name (max 50 chars).</summary>
     public string Name { get; set; } = string.Empty;
 

@@ -55,6 +55,22 @@ public class ExceptionMiddleware
                 apiResponse.Message = notFoundEx.Message;
                 break;
 
+            case ForbiddenException forbiddenEx:
+                _logger.LogWarning(
+                    "Access denied. Path={Path} Message={Message}",
+                    context.Request.Path, forbiddenEx.Message);
+                apiResponse.StatusCode = forbiddenEx.StatusCode;
+                apiResponse.Message = forbiddenEx.Message;
+                break;
+
+            case QuotaExceededException quotaEx:
+                _logger.LogWarning(
+                    "Quota exceeded. Path={Path} Message={Message}",
+                    context.Request.Path, quotaEx.Message);
+                apiResponse.StatusCode = quotaEx.StatusCode;
+                apiResponse.Message = quotaEx.Message;
+                break;
+
             case ConflictException conflictEx:
                 _logger.LogWarning(
                     "Conflict. Path={Path} Message={Message}",

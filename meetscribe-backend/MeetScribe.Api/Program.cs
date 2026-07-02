@@ -3,6 +3,7 @@ using Microsoft.IdentityModel.Tokens;
 using MeetScribe.Ai;
 using MeetScribe.Api;
 using MeetScribe.Api.Middleware;
+using MeetScribe.Api.Services;
 using MeetScribe.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -80,6 +81,9 @@ builder.Services.AddAuthentication(options =>
         }
     };
 });
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IUserContext, UserContext>();
 
 builder.Services.AddMeetScribeApi(builder.Configuration);
 builder.Services.AddMeetScribeAi(builder.Configuration);

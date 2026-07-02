@@ -3,6 +3,10 @@ namespace MeetScribe.Data.Models;
 public class ProjectEntity
 {
     public int Id { get; set; }
+
+    public int UserId { get; set; }
+    public UserEntity? User { get; set; }
+
     public string Name { get; set; } = string.Empty;
 
     /// <summary>

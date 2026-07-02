@@ -1,6 +1,7 @@
 using FluentValidation;
 using MeetScribe.Ai.Managers;
 using MeetScribe.Api.Common.Utility;
+using MeetScribe.Api.Services;
 using MeetScribe.Data.Models;
 using MeetScribe.Data.Repository;
 using MeetScribe.ViewModels;
@@ -24,6 +25,7 @@ public class MeetingsManager : IMeetingsManager
     private readonly IRequirementExtractionManager _extractionManager;
     private readonly IApiResponseBuilder _response;
     private readonly ILogger<MeetingsManager> _logger;
+    private readonly IUserContext _userContext;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -34,12 +36,14 @@ public class MeetingsManager : IMeetingsManager
         IMeetingRepository meetingRepository,
         IRequirementExtractionManager extractionManager,
         IApiResponseBuilder response,
-        ILogger<MeetingsManager> logger)
+        ILogger<MeetingsManager> logger,
+        IUserContext userContext)
     {
         _meetingRepository = meetingRepository;
         _extractionManager = extractionManager;
         _response = response;
         _logger = logger;
+        _userContext = userContext;
     }
 
     public async Task<ApiResponse<List<MeetingListItem>>> GetAllAsync(int projectId, CancellationToken cancellationToken = default)
@@ -47,9 +51,8 @@ public class MeetingsManager : IMeetingsManager
         if (projectId <= 0)
             return _response.BadRequest<List<MeetingListItem>>(null, $"ProjectId id {projectId} should be positive number.");
 
-        var allMeetings = await _meetingRepository.GetAllAsync(cancellationToken);
-
-        var filtered = allMeetings.Where(m => m.ProjectId == projectId).ToList();
+        var userId = await _userContext.GetUserIdAsync(cancellationToken);
+        var filtered = await _meetingRepository.GetByProjectIdAsync(projectId, userId, cancellationToken);
 
         var listItems = filtered.Select(MapToListItem).ToList();
 
@@ -61,7 +64,8 @@ public class MeetingsManager : IMeetingsManager
         if (id <= 0)
             return _response.BadRequest<MeetingEntity>(null, $"Meeting id {id} should be positive number.");
 
-        var meeting = await _meetingRepository.GetByIdAsync(id, cancellationToken);
+        var userId = await _userContext.GetUserIdAsync(cancellationToken);
+        var meeting = await _meetingRepository.GetByIdAsync(id, userId, cancellationToken);
         if (meeting is null)
         {
             return _response.NotFound<MeetingEntity>(null, $"Meeting with ID {id} not found.");
@@ -78,7 +82,8 @@ public class MeetingsManager : IMeetingsManager
         if (string.IsNullOrEmpty(editedResultJson))
             return _response.BadRequest(false, "Edited result cannot be empty.");
 
-        var meeting = await _meetingRepository.GetByIdAsync(id, cancellationToken);
+        var userId = await _userContext.GetUserIdAsync(cancellationToken);
+        var meeting = await _meetingRepository.GetByIdAsync(id, userId, cancellationToken);
         if (meeting is null)
             return _response.NotFound(false, $"Meeting with ID {id} not found.");
 
@@ -93,7 +98,8 @@ public class MeetingsManager : IMeetingsManager
         if (id <= 0)
             return _response.BadRequest(false, "Id should be positive number.");
 
-        var meeting = await _meetingRepository.GetByIdAsync(id, cancellationToken);
+        var userId = await _userContext.GetUserIdAsync(cancellationToken);
+        var meeting = await _meetingRepository.GetByIdAsync(id, userId, cancellationToken);
         if (meeting is null)
             return _response.NotFound(false, $"Meeting with ID {id} not found.");
 
@@ -138,7 +144,8 @@ public class MeetingsManager : IMeetingsManager
         if (projectId <= 0)
             return _response.BadRequest(new List<MeetingListItem>(), $"Project id {projectId} should be positive number.");
 
-        var allMeetings = await _meetingRepository.GetAllByIdAsync(projectId, cancellationToken);
+        var userId = await _userContext.GetUserIdAsync(cancellationToken);
+        var allMeetings = await _meetingRepository.GetByProjectIdAsync(projectId, userId, cancellationToken);
 
         var results = allMeetings
             .Where(m =>
@@ -155,13 +162,14 @@ public class MeetingsManager : IMeetingsManager
     public async Task<ApiResponse<bool>> DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
         if (id <= 0)
-            return _response.BadRequest(false, "Id should be posiitve number.");
+            return _response.BadRequest(false, "Id should be positive number.");
 
-        var meeting = await _meetingRepository.GetByIdAsync(id, cancellationToken);
+        var userId = await _userContext.GetUserIdAsync(cancellationToken);
+        var meeting = await _meetingRepository.GetByIdAsync(id, userId, cancellationToken);
         if (meeting is null)
             return _response.NotFound(false, $"Meeting with ID {id} not found.");
 
-        await _meetingRepository.DeleteAsync(id, cancellationToken);
+        await _meetingRepository.DeleteAsync(id, userId, cancellationToken);
 
         _logger.LogInformation("Meeting deleted: {Id}", id);
         return _response.Ok(true, "Meeting deleted successfully.");

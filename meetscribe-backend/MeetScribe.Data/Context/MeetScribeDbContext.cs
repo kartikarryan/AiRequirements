@@ -14,6 +14,7 @@ public class MeetScribeDbContext : DbContext
     {
     }
 
+    public DbSet<UserEntity> Users => Set<UserEntity>();
     public DbSet<MeetingEntity> Meetings => Set<MeetingEntity>();
     public DbSet<ProjectEntity> Projects => Set<ProjectEntity>();
     public DbSet<IntegrationSettingEntity> IntegrationSettings => Set<IntegrationSettingEntity>();

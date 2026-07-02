@@ -3,6 +3,7 @@ using System;
 using MeetScribe.Data.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MeetScribe.Data.Migrations
 {
     [DbContext(typeof(MeetScribeDbContext))]
-    partial class MeetScribeDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260702202515_User_Table_Added_And_UserId_Included_All_Tables")]
+    partial class User_Table_Added_And_UserId_Included_All_Tables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -228,10 +231,6 @@ namespace MeetScribe.Data.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("AdminNotes")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
                     b.Property<string>("CognitoSub")
                         .IsRequired()
                         .HasMaxLength(128)
@@ -245,16 +244,6 @@ namespace MeetScribe.Data.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
-                    b.Property<bool>("IsAdmin")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
                     b.Property<DateTime?>("LastLoginAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -266,19 +255,6 @@ namespace MeetScribe.Data.Migrations
                     b.Property<string>("PictureUrl")
                         .HasMaxLength(1024)
                         .HasColumnType("character varying(1024)");
-
-                    b.Property<DateTime?>("QuotaResetAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("UploadLimit")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(5);
-
-                    b.Property<int>("UploadsUsed")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(0);
 
                     b.HasKey("Id");
 

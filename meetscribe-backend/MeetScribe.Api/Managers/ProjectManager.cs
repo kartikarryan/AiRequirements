@@ -1,5 +1,6 @@
 using FluentValidation;
 using MeetScribe.Api.Common.Utility;
+using MeetScribe.Api.Services;
 using MeetScribe.Data.Models;
 using MeetScribe.Data.Repository;
 using MeetScribe.ViewModels;
@@ -19,23 +20,27 @@ public class ProjectManager : IProjectManager
     private readonly IMeetingRepository _meetingRepository;
     private readonly IValidator<CreateProjectRequest> _createValidator;
     private readonly IApiResponseBuilder _response;
+    private readonly IUserContext _userContext;
 
     public ProjectManager(
         IProjectRepository projectRepository,
         IMeetingRepository meetingRepository,
         IValidator<CreateProjectRequest> createValidator,
-        IApiResponseBuilder response)
+        IApiResponseBuilder response,
+        IUserContext userContext)
     {
         _projectRepository = projectRepository;
         _meetingRepository = meetingRepository;
         _createValidator = createValidator;
         _response = response;
+        _userContext = userContext;
     }
 
     public async Task<ApiResponse<List<ProjectListItem>>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        var projects = await _projectRepository.GetAllAsync(cancellationToken);
-        var meetings = await _meetingRepository.GetAllAsync(cancellationToken);
+        var userId = await _userContext.GetUserIdAsync(cancellationToken);
+        var projects = await _projectRepository.GetAllAsync(userId, cancellationToken);
+        var meetings = await _meetingRepository.GetAllAsync(userId, cancellationToken);
 
         var result = projects.Select(p =>
         {
@@ -67,7 +72,8 @@ public class ProjectManager : IProjectManager
                 validation.Errors.Select(e => e.ErrorMessage).ToList());
         }
 
-        var existing = await _projectRepository.GetByNameAsync(request.Name.Trim(), cancellationToken);
+        var userId = await _userContext.GetUserIdAsync(cancellationToken);
+        var existing = await _projectRepository.GetByNameAsync(request.Name.Trim(), userId, cancellationToken);
         if (existing is not null)
         {
             var existingItem = new ProjectListItem
@@ -85,6 +91,7 @@ public class ProjectManager : IProjectManager
         {
             Name = request.Name.Trim(),
             LinkedProvider = request.LinkedProvider,
+            UserId = userId,
             CreatedAt = DateTime.UtcNow,
         };
 
@@ -104,17 +111,18 @@ public class ProjectManager : IProjectManager
 
     public async Task<ApiResponse<bool>> DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
-        var project = await _projectRepository.GetByIdAsync(id, cancellationToken);
+        var userId = await _userContext.GetUserIdAsync(cancellationToken);
+        var project = await _projectRepository.GetByIdAsync(id, userId, cancellationToken);
         if (project is null)
             return _response.NotFound(false, "Project not found.");
 
-        var meetings = await _meetingRepository.GetAllAsync(cancellationToken);
+        var meetings = await _meetingRepository.GetAllAsync(userId, cancellationToken);
         var meetingCount = meetings.Count(m => m.ProjectId == id);
 
         if (meetingCount > 0)
             return _response.Conflict(false, $"This project has {meetingCount} meeting(s). Delete all meetings first or move them to another project.");
 
-        await _projectRepository.DeleteAsync(id, cancellationToken);
+        await _projectRepository.DeleteAsync(id, userId, cancellationToken);
         return _response.Ok(true, "Project deleted.");
     }
 }

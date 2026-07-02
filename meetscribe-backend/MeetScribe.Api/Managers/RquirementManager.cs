@@ -1,5 +1,7 @@
 using MeetScribe.Ai.Managers;
 using MeetScribe.Api.Common.Utility;
+using MeetScribe.Api.Exceptions;
+using MeetScribe.Api.Services;
 using MeetScribe.Data.Models;
 using MeetScribe.Data.Repository;
 using MeetScribe.ViewModels;
@@ -37,6 +39,7 @@ public class RequirementManager : IRequirementManager
     private readonly IMeetingRepository _meetingRepository;
     private readonly IApiResponseBuilder _apiResponseBuilder;
     private readonly ILogger<RequirementManager> _logger;
+    private readonly IUserContext _userContext;
 
     private const long MaxFileSizeBytes = 200 * 1024 * 1024;
 
@@ -50,13 +53,15 @@ public class RequirementManager : IRequirementManager
         IRequirementExtractionManager extractionManager,
         IMeetingRepository meetingRepository,
         IApiResponseBuilder apiResponseBuilder,
-        ILogger<RequirementManager> logger)
+        ILogger<RequirementManager> logger,
+        IUserContext userContext)
     {
         _transcriptionManager = transcriptionManager;
         _extractionManager = extractionManager;
         _meetingRepository = meetingRepository;
         _apiResponseBuilder = apiResponseBuilder;
         _logger = logger;
+        _userContext = userContext;
     }
 
     public async Task<ApiResponse<UploadResponse>> GenerateRequirementsAsync(
@@ -70,13 +75,32 @@ public class RequirementManager : IRequirementManager
             return validationError;
         }
 
+        // Step 1.5: Check upload quota
+        var currentUser = await _userContext.GetCurrentUserAsync(cancellationToken);
+
+        if (currentUser.QuotaResetAt is null
+            || currentUser.QuotaResetAt.Value.Month != DateTime.UtcNow.Month
+            || currentUser.QuotaResetAt.Value.Year != DateTime.UtcNow.Year)
+        {
+            currentUser.UploadsUsed = 0;
+            currentUser.QuotaResetAt = DateTime.UtcNow;
+        }
+
+        if (currentUser.UploadsUsed >= currentUser.UploadLimit)
+        {
+            throw new QuotaExceededException(
+                $"Upload limit reached ({currentUser.UploadLimit} per month). Contact an administrator for increased access.");
+        }
+
         // Step 2: Save meeting to DB with "Processing" status
+        var userId = currentUser.Id;
         var meetingEntity = new MeetingEntity
         {
             Name = request.Name.Trim(),
             Description = request.Description?.Trim(),
             TemplateId = request.TemplateId,
             ProjectId = request.ProjectId,
+            UserId = userId,
             MeetingDate = request.MeetingDate.HasValue
                 ? DateTime.SpecifyKind(request.MeetingDate.Value, DateTimeKind.Utc)
                 : DateTime.UtcNow,
@@ -88,6 +112,7 @@ public class RequirementManager : IRequirementManager
         };
 
         await _meetingRepository.CreateAsync(meetingEntity, cancellationToken);
+        currentUser.UploadsUsed++;
         _logger.LogInformation("Meeting saved to DB: {Id} ({Name})", meetingEntity.Id, meetingEntity.Name);
 
         try

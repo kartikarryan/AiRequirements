@@ -450,27 +450,83 @@ export function App() {
       <main className="max-w-6xl mx-auto px-6 py-8">
         {activeProjectId === null ? (
           projects.length === 0 ? (
-            // WELCOME
-            <div className="max-w-md mx-auto text-center py-20">
-              <h2 className="text-2xl font-bold text-slate-900 mb-2">Welcome to MeetScribe</h2>
-              <p className="text-sm text-slate-500 mb-10">
-                Turn meeting recordings into structured documents — action items, decisions, requirements, and more.
-              </p>
-              <div className="card p-6 text-left">
-                <p className="text-sm font-medium text-slate-900 mb-3">Create your first project:</p>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={newProjectName}
-                    onChange={(e) => setNewProjectName(e.target.value)}
-                    placeholder="e.g., Payment Module"
-                    className="input-field"
-                    onKeyDown={(e) => { if (e.key === 'Enter') handleCreateProject(); }}
-                  />
-                  <button onClick={handleCreateProject} className="btn-primary whitespace-nowrap">
-                    Create Project
-                  </button>
+            // ONBOARDING
+            <div className="max-w-xl mx-auto py-12">
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold text-slate-900 mb-2">
+                  Welcome{user?.name ? `, ${user.name.split(' ')[0]}` : ''}!
+                </h2>
+                <p className="text-sm text-slate-500">
+                  Get started in 3 simple steps to turn your meetings into actionable requirements.
+                </p>
+              </div>
+
+              {/* Step 1 — Create Project */}
+              <div className="card p-6 mb-4 border-l-4 border-l-blue-600">
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-white text-sm font-bold">1</span>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-sm font-semibold text-slate-900 mb-1">Create a Project</h3>
+                    <p className="text-xs text-slate-500 mb-3">
+                      Organize your meetings by team, sprint, or initiative.
+                    </p>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newProjectName}
+                        onChange={(e) => setNewProjectName(e.target.value)}
+                        placeholder="e.g., Sprint Planning, Product Discovery"
+                        className="input-field"
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleCreateProject(); }}
+                      />
+                      <button onClick={handleCreateProject} className="btn-primary whitespace-nowrap">
+                        Create
+                      </button>
+                    </div>
+                  </div>
                 </div>
+              </div>
+
+              {/* Step 2 — Upload Meeting */}
+              <div className="card p-6 mb-4 opacity-60">
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-slate-500 text-sm font-bold">2</span>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-sm font-semibold text-slate-900 mb-1">Upload a Meeting Recording</h3>
+                    <p className="text-xs text-slate-500">
+                      Drop an MP3, WAV, or WebM file. AI will transcribe and extract user stories, action items, and decisions automatically.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 3 — Review & Export */}
+              <div className="card p-6 mb-6 opacity-60">
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-slate-500 text-sm font-bold">3</span>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-sm font-semibold text-slate-900 mb-1">Review & Export</h3>
+                    <p className="text-xs text-slate-500">
+                      Edit the extracted requirements, then push them directly to Jira, Azure DevOps, or Linear with one click.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tip */}
+              <div className="flex items-start gap-3 px-4 py-3 bg-blue-50 rounded-lg">
+                <svg className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-xs text-blue-800">
+                  <span className="font-medium">Tip:</span> For best results, use recordings where participants discuss features, requirements, or action items. Meetings with clear speakers work best.
+                </p>
               </div>
             </div>
           ) : (

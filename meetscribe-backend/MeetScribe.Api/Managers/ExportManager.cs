@@ -1,5 +1,6 @@
 using MeetScribe.Ai.Services;
 using MeetScribe.Api.Common.Utility;
+using MeetScribe.Api.Services;
 using MeetScribe.Data.Models;
 using MeetScribe.Data.Repository;
 using MeetScribe.ViewModels;
@@ -23,24 +24,28 @@ public class ExportManager : IExportManager
     private readonly IExportedTicketRepository _exportedRepo;
     private readonly IApiResponseBuilder _response;
     private readonly ILogger<ExportManager> _logger;
+    private readonly IUserContext _userContext;
 
     public ExportManager(
         IIntegrationSettingRepository settingsRepo,
         ITicketServiceFactory ticketFactory,
         IExportedTicketRepository exportedRepo,
         IApiResponseBuilder response,
-        ILogger<ExportManager> logger)
+        ILogger<ExportManager> logger,
+        IUserContext userContext)
     {
         _settingsRepo = settingsRepo;
         _ticketFactory = ticketFactory;
         _exportedRepo = exportedRepo;
         _response = response;
         _logger = logger;
+        _userContext = userContext;
     }
 
     public async Task<ApiResponse<List<string>>> GetProjectsAsync(string provider, CancellationToken cancellationToken = default)
     {
-        var setting = await _settingsRepo.GetByProviderAsync(provider, cancellationToken);
+        var userId = await _userContext.GetUserIdAsync(cancellationToken);
+        var setting = await _settingsRepo.GetByProviderAsync(provider, userId, cancellationToken);
         if (setting is null)
             return _response.BadRequest<List<string>>(null, "Provider not configured.");
 
@@ -53,7 +58,8 @@ public class ExportManager : IExportManager
 
     public async Task<ApiResponse<List<string>>> GetIterationsAsync(string provider, string project, CancellationToken cancellationToken = default)
     {
-        var setting = await _settingsRepo.GetByProviderAsync(provider, cancellationToken);
+        var userId = await _userContext.GetUserIdAsync(cancellationToken);
+        var setting = await _settingsRepo.GetByProviderAsync(provider, userId, cancellationToken);
         if (setting is null)
             return _response.BadRequest<List<string>>(null, "Provider not configured.");
 
@@ -66,7 +72,8 @@ public class ExportManager : IExportManager
 
     public async Task<ApiResponse<List<string>>> GetWorkItemTypesAsync(string provider, string project, CancellationToken cancellationToken = default)
     {
-        var setting = await _settingsRepo.GetByProviderAsync(provider, cancellationToken);
+        var userId = await _userContext.GetUserIdAsync(cancellationToken);
+        var setting = await _settingsRepo.GetByProviderAsync(provider, userId, cancellationToken);
         if (setting is null)
             return _response.BadRequest<List<string>>(null, "Provider not configured.");
 
@@ -79,7 +86,8 @@ public class ExportManager : IExportManager
 
     public async Task<ApiResponse<object>> ExportBatchAsync(string provider, BatchExportRequest request, CancellationToken cancellationToken = default)
     {
-        var setting = await _settingsRepo.GetByProviderAsync(provider, cancellationToken);
+        var userId = await _userContext.GetUserIdAsync(cancellationToken);
+        var setting = await _settingsRepo.GetByProviderAsync(provider,userId, cancellationToken);
         if (setting is null)
             return _response.BadRequest<object>(null, "Provider not configured.");
 

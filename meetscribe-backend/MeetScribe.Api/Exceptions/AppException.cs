@@ -30,3 +30,15 @@ public class AppValidationException : AppException
     public AppValidationException(string message, List<string> errors)
         : base(message, 400, errors) { }
 }
+
+public class ForbiddenException : AppException
+{
+    public ForbiddenException(string message = "Access denied.")
+        : base(message, 403) { }
+}
+
+public class QuotaExceededException : AppException
+{
+    public QuotaExceededException(string message = "Upload limit reached.")
+        : base(message, 429) { }
+}

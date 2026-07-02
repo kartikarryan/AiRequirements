@@ -1,5 +1,6 @@
 using MeetScribe.Ai.Services;
 using MeetScribe.Api.Common.Utility;
+using MeetScribe.Api.Services;
 using MeetScribe.Data.Models;
 using MeetScribe.Data.Repository;
 using MeetScribe.ViewModels;
@@ -24,20 +25,24 @@ public class IntegrationSettingsManager : IIntegrationSettingsManager
     private readonly IIntegrationSettingRepository _settingsRepo;
     private readonly ITicketServiceFactory _ticketFactory;
     private readonly IApiResponseBuilder _response;
+    private readonly IUserContext _userContext;
 
     public IntegrationSettingsManager(
         IIntegrationSettingRepository settingsRepo,
         ITicketServiceFactory ticketFactory,
-        IApiResponseBuilder response)
+        IApiResponseBuilder response,
+        IUserContext userContext)
     {
         _settingsRepo = settingsRepo;
         _ticketFactory = ticketFactory;
         _response = response;
+        _userContext = userContext;
     }
 
     public async Task<ApiResponse<object>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        var all = await _settingsRepo.GetAllActiveAsync(cancellationToken);
+        var userId = await _userContext.GetUserIdAsync(cancellationToken);
+        var all = await _settingsRepo.GetAllActiveAsync(userId, cancellationToken);
 
         var result = all.Select(s => new
         {
@@ -53,7 +58,8 @@ public class IntegrationSettingsManager : IIntegrationSettingsManager
 
     public async Task<ApiResponse<object>> GetByProviderAsync(string provider, CancellationToken cancellationToken = default)
     {
-        var setting = await _settingsRepo.GetByProviderAsync(provider, cancellationToken);
+        var userId = await _userContext.GetUserIdAsync(cancellationToken);
+        var setting = await _settingsRepo.GetByProviderAsync(provider, userId, cancellationToken);
 
         if (setting is null)
             return _response.Ok<object>(new { configured = false, provider });
@@ -95,11 +101,13 @@ public class IntegrationSettingsManager : IIntegrationSettingsManager
         if (settings == null || settings.Count == 0)
             return _response.BadRequest(false, "Settings are required.");
 
+        var userId = await _userContext.GetUserIdAsync(cancellationToken);
         var entity = new IntegrationSettingEntity
         {
             Provider = provider,
             SettingsJson = JsonSerializer.Serialize(settings),
             IsActive = true,
+            UserId = userId,
         };
 
         await _settingsRepo.SaveAsync(entity, cancellationToken);
@@ -108,7 +116,8 @@ public class IntegrationSettingsManager : IIntegrationSettingsManager
 
     public async Task<ApiResponse<bool>> DisconnectAsync(string provider, CancellationToken cancellationToken = default)
     {
-        var deleted = await _settingsRepo.DeleteAsync(provider, cancellationToken);
+        var userId = await _userContext.GetUserIdAsync(cancellationToken);
+        var deleted = await _settingsRepo.DeleteAsync(provider, userId, cancellationToken);
         if (!deleted)
             return _response.NotFound(false, "No integration found for this provider.");
 
@@ -117,7 +126,8 @@ public class IntegrationSettingsManager : IIntegrationSettingsManager
 
     public async Task<ApiResponse<List<string>>> GetProjectsAsync(string provider, CancellationToken cancellationToken = default)
     {
-        var setting = await _settingsRepo.GetByProviderAsync(provider, cancellationToken);
+        var userId = await _userContext.GetUserIdAsync(cancellationToken);
+        var setting = await _settingsRepo.GetByProviderAsync(provider, userId, cancellationToken);
         if (setting is null)
             return _response.BadRequest<List<string>>(null, "Provider not configured.");
 
@@ -130,7 +140,8 @@ public class IntegrationSettingsManager : IIntegrationSettingsManager
 
     public async Task<ApiResponse<List<string>>> GetIterationsAsync(string provider, string project, CancellationToken cancellationToken = default)
     {
-        var setting = await _settingsRepo.GetByProviderAsync(provider, cancellationToken);
+        var userId = await _userContext.GetUserIdAsync(cancellationToken);
+        var setting = await _settingsRepo.GetByProviderAsync(provider, userId, cancellationToken);
         if (setting is null)
             return _response.BadRequest<List<string>>(null, "Provider not configured.");
 
@@ -143,7 +154,8 @@ public class IntegrationSettingsManager : IIntegrationSettingsManager
 
     public async Task<ApiResponse<List<string>>> GetWorkItemTypesAsync(string provider, string project, CancellationToken cancellationToken = default)
     {
-        var setting = await _settingsRepo.GetByProviderAsync(provider, cancellationToken);
+        var userId = await _userContext.GetUserIdAsync(cancellationToken);
+        var setting = await _settingsRepo.GetByProviderAsync(provider, userId, cancellationToken);
         if (setting is null)
             return _response.BadRequest<List<string>>(null, "Provider not configured.");
 
