@@ -1,8 +1,8 @@
 export const AUTH_CONFIG = {
   region: import.meta.env.VITE_COGNITO_REGION || 'us-east-1',
-  userPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID || 'us-east-1_PLACEHOLDER',
-  clientId: import.meta.env.VITE_COGNITO_CLIENT_ID || 'PLACEHOLDER_CLIENT_ID',
-  domain: import.meta.env.VITE_COGNITO_DOMAIN || 'your-app.auth.us-east-1.amazoncognito.com',
+  userPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID || 'us-east-1_S2eFQMrNe',
+  clientId: import.meta.env.VITE_COGNITO_CLIENT_ID || '1r0evjt566o518v8e2comdb7ok',
+  domain: import.meta.env.VITE_COGNITO_DOMAIN || 'us-east-1s2efqmrne.auth.us-east-1.amazoncognito.com',
   redirectUri: import.meta.env.VITE_COGNITO_REDIRECT_URI || `${window.location.origin}/auth/callback`,
   logoutUri: import.meta.env.VITE_COGNITO_LOGOUT_URI || window.location.origin,
   scopes: ['openid', 'email', 'profile'],
