@@ -17,6 +17,7 @@ public interface IMeetingsManager
     Task<ApiResponse<bool>> RetryExtractionAsync(int id, string? templateId, CancellationToken cancellationToken = default);
     Task<ApiResponse<List<MeetingListItem>>> SearchAsync(string query, int projectId, CancellationToken cancellationToken = default);
     Task<ApiResponse<bool>> DeleteAsync(int id, CancellationToken cancellationToken = default);
+    Task<ApiResponse<bool>> BulkDeleteAsync(List<int> ids, CancellationToken cancellationToken = default);
 }
 
 public class MeetingsManager : IMeetingsManager
@@ -173,6 +174,27 @@ public class MeetingsManager : IMeetingsManager
 
         _logger.LogInformation("Meeting deleted: {Id}", id);
         return _response.Ok(true, "Meeting deleted successfully.");
+    }
+
+    public async Task<ApiResponse<bool>> BulkDeleteAsync(List<int> ids, CancellationToken cancellationToken = default)
+    {
+        if (ids == null || ids.Count == 0)
+            return _response.BadRequest(false, "No meeting IDs provided.");
+
+        if (ids.Count > 50)
+            return _response.BadRequest(false, "Cannot delete more than 50 meetings at once.");
+
+        var userId = await _userContext.GetUserIdAsync(cancellationToken);
+        var deletedCount = 0;
+
+        foreach (var id in ids)
+        {
+            var success = await _meetingRepository.DeleteAsync(id, userId, cancellationToken);
+            if (success) deletedCount++;
+        }
+
+        _logger.LogInformation("Bulk deleted {Count} meetings for user {UserId}", deletedCount, userId);
+        return _response.Ok(true, $"{deletedCount} meeting(s) deleted successfully.");
     }
 
     private static MeetingListItem MapToListItem(MeetingEntity m) => new()
