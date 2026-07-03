@@ -7,5 +7,10 @@
   },
   "OpenAiSettings": {
     "ApiKey": "YOUR_OPENAI_KEY (optional — only if using OpenAI provider)"
+  },
+  "AnthropicSettings": {
+    "ApiKey": "YOUR_ANTHROPIC_API_KEY"
   }
 }
+
+

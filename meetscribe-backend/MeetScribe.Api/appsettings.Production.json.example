@@ -7,5 +7,8 @@
   },
   "AllowedOrigins": [
     "https://YOUR_VERCEL_APP.vercel.app"
-  ]
+  ],
+  "AnthropicSettings": {
+    "ApiKey": "YOUR_ANTHROPIC_API_KEY"
+  }
 }
