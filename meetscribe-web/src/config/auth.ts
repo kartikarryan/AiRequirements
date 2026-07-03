@@ -42,6 +42,7 @@ export async function getLoginUrl(): Promise<string> {
       scope: AUTH_CONFIG.scopes.join(' '),
       redirect_uri: AUTH_CONFIG.redirectUri,
       identity_provider: 'Google',
+      prompt: 'select_account',
       code_challenge_method: 'S256',
       code_challenge: codeChallenge,
     });
@@ -55,6 +56,7 @@ export async function getLoginUrl(): Promise<string> {
       scope: AUTH_CONFIG.scopes.join(' '),
       redirect_uri: AUTH_CONFIG.redirectUri,
       identity_provider: 'Google',
+      prompt: 'select_account',
     });
     return `https://${AUTH_CONFIG.domain}/oauth2/authorize?${params.toString()}`;
   }

@@ -71,3 +71,21 @@ export async function deleteMeeting(meetingId: number): Promise<void> {
     throw new ApiError(response.status, body?.message || 'Failed to delete meeting.');
   }
 }
+
+export async function deleteAccount(): Promise<void> {
+  const response = await api.delete('/api/account');
+
+  if (!response.ok) {
+    const body = await parseResponseBody<any>(response);
+    throw new ApiError(response.status, body?.message || 'Failed to delete account.');
+  }
+}
+
+export async function bulkDeleteMeetings(ids: number[]): Promise<void> {
+  const response = await api.post('/api/meetings/bulk-delete', { ids });
+
+  if (!response.ok) {
+    const body = await parseResponseBody<any>(response);
+    throw new ApiError(response.status, body?.message || 'Failed to delete meetings.');
+  }
+}

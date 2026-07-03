@@ -64,4 +64,12 @@ public class MeetingsController : ControllerBase
         var result = await _meetingsManager.DeleteAsync(id, cancellationToken);
         return StatusCode(result.StatusCode, result);
     }
+
+    /// <summary>Bulk delete meetings by IDs.</summary>
+    [HttpPost("bulk-delete")]
+    public async Task<IActionResult> BulkDelete([FromBody] BulkDeleteRequest request, CancellationToken cancellationToken)
+    {
+        var result = await _meetingsManager.BulkDeleteAsync(request.Ids, cancellationToken);
+        return StatusCode(result.StatusCode, result);
+    }
 }

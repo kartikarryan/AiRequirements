@@ -11,7 +11,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ExtractionResult } from './types/extraction';
-import { uploadAndExtract, getMeetingsByProject, getMeetingById, deleteMeeting, saveEditedExtraction, retryExtraction, searchMeetings } from './services/meetingService';
+import { uploadAndExtract, getMeetingsByProject, getMeetingById, deleteMeeting, bulkDeleteMeetings, deleteAccount, saveEditedExtraction, retryExtraction, searchMeetings } from './services/meetingService';
 import { getAllProjects, createProject, deleteProject, Project } from './services/projectService';
 import { DocumentView } from './components/DocumentView';
 import { UploadModal } from './components/UploadModal';
@@ -298,6 +298,8 @@ export function App() {
   }
 
   const [deleteMeetingConfirm, setDeleteMeetingConfirm] = useState<{ id: number; name: string } | null>(null);
+  const [selectedMeetingIds, setSelectedMeetingIds] = useState<Set<number>>(new Set());
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
   function handleDeleteMeeting(id: number) {
     const meeting = meetings.find(m => m.id === id);
@@ -316,6 +318,40 @@ export function App() {
       setPopup({ type: 'error', message: 'Failed to delete meeting. Please try again.' });
     }
     setDeleteMeetingConfirm(null);
+  }
+
+  function toggleMeetingSelection(id: number) {
+    setSelectedMeetingIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll(meetingIds: number[]) {
+    setSelectedMeetingIds(prev => {
+      const allSelected = meetingIds.every(id => prev.has(id));
+      if (allSelected) return new Set();
+      return new Set(meetingIds);
+    });
+  }
+
+  async function handleBulkDelete() {
+    if (selectedMeetingIds.size === 0) return;
+    setIsBulkDeleting(true);
+    try {
+      const ids = Array.from(selectedMeetingIds);
+      await bulkDeleteMeetings(ids);
+      if (selectedMeetingId && selectedMeetingIds.has(selectedMeetingId)) closeDrawer();
+      if (activeProjectId !== null) await loadMeetings(activeProjectId);
+      await loadProjects();
+      setPopup({ type: 'success', message: `${ids.length} meeting(s) deleted successfully.` });
+      setSelectedMeetingIds(new Set());
+    } catch {
+      setPopup({ type: 'error', message: 'Failed to delete meetings. Please try again.' });
+    }
+    setIsBulkDeleting(false);
   }
 
   function handleCloseDrawer() {
@@ -431,12 +467,30 @@ export function App() {
                     </div>
                     <button
                       onClick={() => { setShowUserMenu(false); logout(); }}
-                      className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                      className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition-colors"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                       </svg>
                       Sign Out
+                    </button>
+                    <button
+                      onClick={async () => {
+                        setShowUserMenu(false);
+                        if (!window.confirm('Are you sure you want to delete your account? This will permanently remove all your projects, meetings, and data. This cannot be undone.')) return;
+                        try {
+                          await deleteAccount();
+                          logout();
+                        } catch {
+                          setPopup({ type: 'error', message: 'Failed to delete account. Please try again.' });
+                        }
+                      }}
+                      className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors border-t border-slate-100"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      Delete Account
                     </button>
                   </div>
                 </>
@@ -694,10 +748,40 @@ export function App() {
               </div>
             )}
 
+            {/* Bulk action bar */}
+            {selectedMeetingIds.size > 0 && (
+              <div className="mb-3 flex items-center gap-3 px-4 py-2.5 bg-blue-50 border border-blue-200 rounded-xl">
+                <span className="text-sm font-medium text-blue-800">
+                  {selectedMeetingIds.size} selected
+                </span>
+                <button
+                  onClick={handleBulkDelete}
+                  disabled={isBulkDeleting}
+                  className="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+                >
+                  {isBulkDeleting ? 'Deleting...' : 'Delete Selected'}
+                </button>
+                <button
+                  onClick={() => setSelectedMeetingIds(new Set())}
+                  className="text-xs text-slate-600 hover:text-slate-900 font-medium"
+                >
+                  Clear Selection
+                </button>
+              </div>
+            )}
+
             {projectMeetings.length > 0 && (
             <div className="card overflow-hidden">
               <div className="grid grid-cols-12 gap-4 px-5 py-3 bg-slate-50 border-b border-slate-200">
-                <div className="col-span-4 section-label">Meeting</div>
+                <div className="col-span-1 flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={projectMeetings.length > 0 && projectMeetings.every(m => selectedMeetingIds.has(m.id))}
+                    onChange={() => toggleSelectAll(projectMeetings.map(m => m.id))}
+                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="col-span-3 section-label">Meeting</div>
                 <div className="col-span-3 section-label">Template</div>
                 <div className="col-span-2 section-label">Date</div>
                 <div className="col-span-1 section-label">Status</div>
@@ -711,9 +795,19 @@ export function App() {
                     grid grid-cols-12 gap-4 px-5 py-3.5 border-b border-slate-100 last:border-b-0 transition-all group
                     ${meeting.status === 'Completed' ? 'cursor-pointer hover:bg-blue-50' : 'cursor-default'}
                     ${meeting.id === selectedMeetingId ? 'bg-blue-50 border-l-4 border-l-blue-600' : ''}
+                    ${selectedMeetingIds.has(meeting.id) ? 'bg-blue-50/50' : ''}
                   `}
                 >
-                  <div className="col-span-4">
+                  <div className="col-span-1 flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedMeetingIds.has(meeting.id)}
+                      onChange={(e) => { e.stopPropagation(); toggleMeetingSelection(meeting.id); }}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="col-span-3">
                     <p className="text-sm font-medium text-slate-900 truncate">{meeting.name}</p>
                     {meeting.description && <p className="text-xs text-slate-400 truncate">{meeting.description}</p>}
                   </div>
