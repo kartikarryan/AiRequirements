@@ -1807,3 +1807,117 @@
 }
 2026-07-01 17:29:19.228 [Information] PostAsync<R, S, T>: Using default timeout: 30000
 2026-07-01 17:29:23.047 [Information] TranscribeFile: https://api.deepgram.com/v1/listen Succeeded
+2026-07-03 03:03:27.187 [Information] DeepgramHttpClientOptions: OnPrem: False
+2026-07-03 03:03:27.226 [Information] DeepgramHttpClientOptions: APIVersion: v1
+2026-07-03 03:03:27.228 [Information] DeepgramHttpClientOptions: API KEY set from environment variable
+2026-07-03 03:03:27.241 [Information] DeepgramHttpClientOptions: REST BaseAddress does not contain API version: api.deepgram.com
+2026-07-03 03:03:27.244 [Information] DeepgramHttpClientOptions: BaseAddress contains no protocol: api.deepgram.com/v1
+2026-07-03 03:03:27.245 [Information] DeepgramHttpClientOptions: BaseAddress: https://api.deepgram.com/v1
+2026-07-03 03:03:27.291 [Information] HttpClientFactory.Create: HttpClient ID: DEEPGRAM_HTTP_CLIENT
+2026-07-03 03:03:27.344 [Information] TranscribeFile: source: System.IO.MemoryStream
+2026-07-03 03:03:27.379 [Information] TranscribeFile: prerecordedSchema:
+{
+  "diarize": true,
+  "model": "nova-3",
+  "paragraphs": true,
+  "punctuate": true,
+  "smart_format": true,
+  "utterances": true
+}
+2026-07-03 03:03:27.384 [Information] PostAsync<R, S, T>: Using default timeout: 30000
+2026-07-03 03:03:31.583 [Information] TranscribeFile: https://api.deepgram.com/v1/listen Succeeded
+2026-07-03 03:05:20.434 [Information] DeepgramHttpClientOptions: OnPrem: False
+2026-07-03 03:05:20.435 [Information] DeepgramHttpClientOptions: APIVersion: v1
+2026-07-03 03:05:20.437 [Information] DeepgramHttpClientOptions: API KEY set from environment variable
+2026-07-03 03:05:20.438 [Information] DeepgramHttpClientOptions: REST BaseAddress does not contain API version: api.deepgram.com
+2026-07-03 03:05:20.440 [Information] DeepgramHttpClientOptions: BaseAddress contains no protocol: api.deepgram.com/v1
+2026-07-03 03:05:20.440 [Information] DeepgramHttpClientOptions: BaseAddress: https://api.deepgram.com/v1
+2026-07-03 03:05:20.441 [Information] HttpClientFactory.Create: HttpClient ID: DEEPGRAM_HTTP_CLIENT
+2026-07-03 03:05:20.444 [Information] TranscribeFile: source: System.IO.MemoryStream
+2026-07-03 03:05:20.445 [Information] TranscribeFile: prerecordedSchema:
+{
+  "diarize": true,
+  "model": "nova-3",
+  "paragraphs": true,
+  "punctuate": true,
+  "smart_format": true,
+  "utterances": true
+}
+2026-07-03 03:05:20.446 [Information] PostAsync<R, S, T>: Using default timeout: 30000
+2026-07-03 03:05:25.830 [Information] TranscribeFile: https://api.deepgram.com/v1/listen Succeeded
+2026-07-03 03:09:29.694 [Information] DeepgramHttpClientOptions: OnPrem: False
+2026-07-03 03:09:29.722 [Information] DeepgramHttpClientOptions: APIVersion: v1
+2026-07-03 03:09:29.723 [Information] DeepgramHttpClientOptions: API KEY set from environment variable
+2026-07-03 03:09:29.726 [Information] DeepgramHttpClientOptions: REST BaseAddress does not contain API version: api.deepgram.com
+2026-07-03 03:09:29.727 [Information] DeepgramHttpClientOptions: BaseAddress contains no protocol: api.deepgram.com/v1
+2026-07-03 03:09:29.728 [Information] DeepgramHttpClientOptions: BaseAddress: https://api.deepgram.com/v1
+2026-07-03 03:09:29.747 [Information] HttpClientFactory.Create: HttpClient ID: DEEPGRAM_HTTP_CLIENT
+2026-07-03 03:09:29.789 [Information] TranscribeFile: source: System.IO.MemoryStream
+2026-07-03 03:09:29.824 [Information] TranscribeFile: prerecordedSchema:
+{
+  "diarize": true,
+  "model": "nova-3",
+  "paragraphs": true,
+  "punctuate": true,
+  "smart_format": true,
+  "utterances": true
+}
+2026-07-03 03:09:29.828 [Information] PostAsync<R, S, T>: Using default timeout: 30000
+2026-07-03 03:09:34.783 [Information] TranscribeFile: https://api.deepgram.com/v1/listen Succeeded
+2026-07-03 03:11:42.485 [Information] DeepgramHttpClientOptions: OnPrem: False
+2026-07-03 03:11:42.503 [Information] DeepgramHttpClientOptions: APIVersion: v1
+2026-07-03 03:11:42.506 [Information] DeepgramHttpClientOptions: API KEY set from environment variable
+2026-07-03 03:11:42.508 [Information] DeepgramHttpClientOptions: REST BaseAddress does not contain API version: api.deepgram.com
+2026-07-03 03:11:42.509 [Information] DeepgramHttpClientOptions: BaseAddress contains no protocol: api.deepgram.com/v1
+2026-07-03 03:11:42.510 [Information] DeepgramHttpClientOptions: BaseAddress: https://api.deepgram.com/v1
+2026-07-03 03:11:42.526 [Information] HttpClientFactory.Create: HttpClient ID: DEEPGRAM_HTTP_CLIENT
+2026-07-03 03:11:42.561 [Information] TranscribeFile: source: System.IO.MemoryStream
+2026-07-03 03:11:42.586 [Information] TranscribeFile: prerecordedSchema:
+{
+  "diarize": true,
+  "model": "nova-3",
+  "paragraphs": true,
+  "punctuate": true,
+  "smart_format": true,
+  "utterances": true
+}
+2026-07-03 03:11:42.594 [Information] PostAsync<R, S, T>: Using default timeout: 30000
+2026-07-03 03:11:47.591 [Information] TranscribeFile: https://api.deepgram.com/v1/listen Succeeded
+2026-07-03 10:36:34.042 [Information] DeepgramHttpClientOptions: OnPrem: False
+2026-07-03 10:36:34.091 [Information] DeepgramHttpClientOptions: APIVersion: v1
+2026-07-03 10:36:34.094 [Information] DeepgramHttpClientOptions: API KEY set from environment variable
+2026-07-03 10:36:34.109 [Information] DeepgramHttpClientOptions: REST BaseAddress does not contain API version: api.deepgram.com
+2026-07-03 10:36:34.112 [Information] DeepgramHttpClientOptions: BaseAddress contains no protocol: api.deepgram.com/v1
+2026-07-03 10:36:34.113 [Information] DeepgramHttpClientOptions: BaseAddress: https://api.deepgram.com/v1
+2026-07-03 10:36:34.254 [Information] HttpClientFactory.Create: HttpClient ID: DEEPGRAM_HTTP_CLIENT
+2026-07-03 10:36:34.437 [Information] TranscribeFile: source: System.IO.MemoryStream
+2026-07-03 10:36:34.594 [Information] TranscribeFile: prerecordedSchema:
+{
+  "diarize": true,
+  "model": "nova-3",
+  "paragraphs": true,
+  "punctuate": true,
+  "smart_format": true,
+  "utterances": true
+}
+2026-07-03 10:36:34.613 [Information] PostAsync<R, S, T>: Using default timeout: 30000
+2026-07-03 10:36:39.599 [Information] TranscribeFile: https://api.deepgram.com/v1/listen Succeeded
+2026-07-03 13:01:18.963 [Information] DeepgramHttpClientOptions: OnPrem: False
+2026-07-03 13:01:19.276 [Information] DeepgramHttpClientOptions: APIVersion: v1
+2026-07-03 13:01:19.303 [Information] DeepgramHttpClientOptions: API KEY set from environment variable
+2026-07-03 13:01:19.316 [Information] DeepgramHttpClientOptions: REST BaseAddress does not contain API version: api.deepgram.com
+2026-07-03 13:01:19.320 [Information] DeepgramHttpClientOptions: BaseAddress contains no protocol: api.deepgram.com/v1
+2026-07-03 13:01:19.327 [Information] DeepgramHttpClientOptions: BaseAddress: https://api.deepgram.com/v1
+2026-07-03 13:01:19.433 [Information] HttpClientFactory.Create: HttpClient ID: DEEPGRAM_HTTP_CLIENT
+2026-07-03 13:01:19.960 [Information] TranscribeFile: source: System.IO.MemoryStream
+2026-07-03 13:01:20.017 [Information] TranscribeFile: prerecordedSchema:
+{
+  "diarize": true,
+  "model": "nova-3",
+  "paragraphs": true,
+  "punctuate": true,
+  "smart_format": true,
+  "utterances": true
+}
+2026-07-03 13:01:20.067 [Information] PostAsync<R, S, T>: Using default timeout: 30000
+2026-07-03 13:01:25.103 [Information] TranscribeFile: https://api.deepgram.com/v1/listen Succeeded
