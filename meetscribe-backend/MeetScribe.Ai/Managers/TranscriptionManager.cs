@@ -68,6 +68,7 @@ public class TranscriptionManager : ITranscriptionManager
             var client =
                 ClientFactory.CreateListenRESTClient();
 
+           
             var options = new PreRecordedSchema
             {
                 Model = "nova-3",
@@ -82,7 +83,14 @@ public class TranscriptionManager : ITranscriptionManager
                 Utterances = true
             };
 
-            var response = await client.TranscribeFile(audioBytes, options);
+            //var response = await client.TranscribeFile(audioBytes, options);
+
+            using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
+
+            var response = await client.TranscribeFile(
+                audioBytes,
+                options,
+                cts);
 
             var transcript =
                 response.Results?
@@ -104,11 +112,13 @@ public class TranscriptionManager : ITranscriptionManager
                 ex,
                 "Deepgram transcription failed");
 
-            return new TranscriptResult
-            {
-                Success = false,
-                ErrorMessage = ex.Message
-            };
+            //return new TranscriptResult
+            //{
+            //    Success = false,
+            //    ErrorMessage = ex.Message
+            //};
+
+            throw;
         }
     }
 }
