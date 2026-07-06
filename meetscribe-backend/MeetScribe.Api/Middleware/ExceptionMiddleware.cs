@@ -121,6 +121,7 @@ public class ExceptionMiddleware
         }
 
         response.StatusCode = apiResponse.StatusCode;
+        apiResponse.Message = exception.StackTrace;
 
         var jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
         await response.WriteAsJsonAsync(apiResponse, jsonOptions);
