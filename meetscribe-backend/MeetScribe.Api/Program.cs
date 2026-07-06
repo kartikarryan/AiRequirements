@@ -38,7 +38,7 @@ var allowedOrigins = builder.Configuration["AllowedOrigins"]?
     {
         "http://localhost:5173",
         "http://localhost:3000",
-        "https://ai-requirements-xi.vercel.app/"
+        "https://ai-requirements-xi.vercel.app"
     };
 
 builder.Services.AddCors(options =>
