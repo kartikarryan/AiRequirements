@@ -17,6 +17,7 @@ import { DocumentView } from './components/DocumentView';
 import { UploadModal } from './components/UploadModal';
 import { ExportModal } from './components/ExportModal';
 import { ResultPopup } from './components/ResultPopup';
+import { ConfirmDialog } from './components/ConfirmDialog';
 import { getConnectedIntegrations } from './services/integrationService';
 import { useAuth } from './context/AuthContext';
 
@@ -40,6 +41,7 @@ export function App() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false);
 
   // Derive active IDs from URL (survives refresh)
   const activeProjectId = params.projectId ? Number(params.projectId) : null;
@@ -475,16 +477,7 @@ export function App() {
                       Sign Out
                     </button>
                     <button
-                      onClick={async () => {
-                        setShowUserMenu(false);
-                        if (!window.confirm('Are you sure you want to delete your account? This will permanently remove all your projects, meetings, and data. This cannot be undone.')) return;
-                        try {
-                          await deleteAccount();
-                          logout();
-                        } catch {
-                          setPopup({ type: 'error', message: 'Failed to delete account. Please try again.' });
-                        }
-                      }}
+                      onClick={() => { setShowUserMenu(false); setShowDeleteAccountConfirm(true); }}
                       className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors border-t border-slate-100"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1015,6 +1008,27 @@ export function App() {
 
       {/* Upload Modal */}
       {showUploadModal && <UploadModal onClose={() => setShowUploadModal(false)} onUpload={handleUpload} preSelectedProjectId={activeProjectId || undefined} />}
+
+      {/* Delete Account Confirmation */}
+      {showDeleteAccountConfirm && (
+        <ConfirmDialog
+          title="Delete Account"
+          message="Are you sure you want to delete your account?"
+          detail="This will permanently remove all your projects, meetings, and extracted data. This action cannot be undone."
+          confirmLabel="Delete My Account"
+          confirmVariant="danger"
+          onConfirm={async () => {
+            setShowDeleteAccountConfirm(false);
+            try {
+              await deleteAccount();
+              logout();
+            } catch {
+              setPopup({ type: 'error', message: 'Failed to delete account. Please try again.' });
+            }
+          }}
+          onCancel={() => setShowDeleteAccountConfirm(false)}
+        />
+      )}
 
       {/* Popup */}
       {popup && <ResultPopup type={popup.type} message={popup.message} onClose={() => setPopup(null)} />}

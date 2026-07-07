@@ -42,18 +42,31 @@ export async function getIntegrationsConfig(): Promise<ProviderConfig[]> {
 export async function getConnectedIntegrations(): Promise<{ configured: boolean; data: ConnectedProvider[] }> {
   const response = await api.get('/api/integrations');
   if (!response.ok) return { configured: false, data: [] };
-  return await response.json();
+  const body = await response.json();
+  const inner = body?.data;
+
+  if (Array.isArray(inner)) {
+    return { configured: inner.length > 0, data: inner };
+  }
+
+  if (inner?.data && Array.isArray(inner.data)) {
+    return { configured: inner.configured ?? inner.data.length > 0, data: inner.data };
+  }
+
+  return { configured: false, data: [] };
 }
 
 export async function getProviderStatus(provider: string): Promise<{ configured: boolean; settings?: Record<string, string>; createdAt?: string }> {
   const response = await api.get(`/api/integrations/${provider}`);
   if (!response.ok) return { configured: false };
-  return await response.json();
+  const body = await response.json();
+  return body?.data || { configured: false };
 }
 
 export async function testProviderConnection(provider: string, settings: Record<string, string>): Promise<{ success: boolean; message: string; projects?: string[] }> {
   const response = await api.post(`/api/integrations/${provider}/test`, settings);
-  return await response.json();
+  const body = await response.json();
+  return body?.data || body;
 }
 
 export async function saveProviderSettings(provider: string, settings: Record<string, string>): Promise<void> {

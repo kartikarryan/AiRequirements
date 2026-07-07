@@ -9,6 +9,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { ConfirmDialog } from './ConfirmDialog';
 import {
   ProviderConfig,
   ConnectedProvider,
@@ -38,13 +39,6 @@ const PROVIDERS: ProviderConfig[] = [
       { key: 'apiToken', label: 'API Token', type: 'password', required: true, placeholder: 'Paste your Jira API token', helpLink: 'https://id.atlassian.com/manage-profile/security/api-tokens' },
     ],
   },
-  {
-    id: 'Linear', name: 'Linear', icon: 'L', color: '#5E6AD2',
-    description: 'Create issues in Linear teams', available: false,
-    fields: [
-      { key: 'apiKey', label: 'API Key', type: 'password', required: true, placeholder: 'lin_api_...', helpLink: 'https://linear.app/settings/api' },
-    ],
-  },
 ];
 
 interface SettingsPageProps {
@@ -62,14 +56,18 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
+  const [disconnectConfirm, setDisconnectConfirm] = useState<string | null>(null);
 
   useEffect(() => { loadConnections(); }, []);
 
   async function loadConnections() {
     try {
       const result = await getConnectedIntegrations();
-      setConnectedProviders(result.data || []);
-    } catch {} finally {
+      const providers = Array.isArray(result) ? result : (result.data || []);
+      setConnectedProviders(providers);
+    } catch (err) {
+      console.error('Failed to load integrations:', err);
+    } finally {
       setIsLoading(false);
     }
   }
@@ -80,7 +78,8 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
 
   function startSetup(provider: ProviderConfig) {
     setActiveProvider(provider);
-    setFormValues({});
+    const conn = getConnection(provider.id);
+    setFormValues(conn?.settings ? { ...conn.settings } : {});
     setError('');
     setActiveView('setup');
   }
@@ -131,14 +130,19 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
   }
 
   async function handleDisconnect(providerId: string) {
-    if (!confirm('Disconnect this integration? You can reconnect anytime.')) return;
+    setDisconnectConfirm(providerId);
+  }
+
+  async function confirmDisconnect() {
+    if (!disconnectConfirm) return;
     try {
-      await disconnectProvider(providerId);
+      await disconnectProvider(disconnectConfirm);
       await loadConnections();
       setActiveView('list');
     } catch {
       setError('Failed to disconnect.');
     }
+    setDisconnectConfirm(null);
   }
 
   if (isLoading) return <div className="text-center py-12 text-slate-400">Loading...</div>;
@@ -195,6 +199,21 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
               );
             })}
           </div>
+
+          {/* Next Steps Guidance — shown when at least one provider is connected */}
+          {connectedProviders.length > 0 && (
+            <div className="mt-6 bg-blue-50 border border-blue-100 rounded-xl p-4">
+              <h4 className="text-sm font-semibold text-blue-900 mb-2">How export works</h4>
+              <ol className="text-xs text-blue-800 space-y-1.5 list-decimal list-inside">
+                <li>Go to any <span className="font-medium">completed meeting</span> and open its results</li>
+                <li>Click <span className="font-medium">"Export to DevOps"</span> in the top-right of the document view</li>
+                <li>Pick your project and sprint — each requirement becomes a Work Item with title, description, and acceptance criteria</li>
+              </ol>
+              <p className="text-[10px] text-blue-600 mt-3">
+                Items are created as "New" state. You can review and update them in your board after export.
+              </p>
+            </div>
+          )}
         </div>
       )}
 
@@ -289,6 +308,19 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
             <button onClick={() => handleDisconnect(activeProvider.id)} className="btn-danger flex-1">Disconnect</button>
           </div>
         </div>
+      )}
+
+      {/* Disconnect Confirmation */}
+      {disconnectConfirm && (
+        <ConfirmDialog
+          title="Disconnect Integration"
+          message={`Disconnect ${disconnectConfirm} integration?`}
+          detail="You can reconnect anytime by entering your credentials again."
+          confirmLabel="Disconnect"
+          confirmVariant="danger"
+          onConfirm={confirmDisconnect}
+          onCancel={() => setDisconnectConfirm(null)}
+        />
       )}
     </div>
   );
