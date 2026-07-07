@@ -41,7 +41,8 @@ public class RequirementManager : IRequirementManager
     private readonly ILogger<RequirementManager> _logger;
     private readonly IUserContext _userContext;
 
-    private const long MaxFileSizeBytes = 200 * 1024 * 1024;
+    private const long MaxFileSizeBytes = 25 * 1024 * 1024;
+    private const int MaxAudioMinutes = 15;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -208,7 +209,7 @@ public class RequirementManager : IRequirementManager
         if (request.AudioFile.Length > MaxFileSizeBytes)
         {
             return _apiResponseBuilder.BadRequest<UploadResponse>(
-                null, $"File size exceeds the 200 MB limit. Your file: {request.AudioFile.Length / (1024 * 1024)} MB.");
+                null, $"Audio files are limited to {MaxAudioMinutes} minutes (max {MaxFileSizeBytes / (1024 * 1024)} MB). Your file: {request.AudioFile.Length / (1024 * 1024)} MB. Please trim your recording to {MaxAudioMinutes} minutes or less.");
         }
 
         var allowedExtensions = new[] { ".webm", ".mp3", ".wav" };

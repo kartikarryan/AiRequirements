@@ -245,7 +245,13 @@ export function App() {
       if (activeProjectId !== null) await loadMeetings(activeProjectId); await loadProjects();
     } catch (err: any) {
       setShowUploadModal(false);
-      setPopup({ type: 'error', message: err.userMessage || 'Something went wrong.' });
+      if (err.statusCode === 429) {
+        setPopup({ type: 'error', message: err.userMessage || 'You have reached your monthly upload limit. Please contact an administrator for increased access.' });
+      } else if (err.statusCode === 403) {
+        setPopup({ type: 'error', message: 'Your account has been disabled. Please contact an administrator.' });
+      } else {
+        setPopup({ type: 'error', message: err.userMessage || 'Something went wrong. Please try again.' });
+      }
       if (activeProjectId !== null) await loadMeetings(activeProjectId); await loadProjects();
     }
   }

@@ -19,7 +19,8 @@
 
 import { useState, useRef } from 'react';
 
-const MAX_FILE_SIZE = 200 * 1024 * 1024;
+const MAX_FILE_SIZE = 25 * 1024 * 1024;
+const MAX_AUDIO_MINUTES = 15;
 const MAX_NAME_LENGTH = 50;
 const MAX_DESCRIPTION_LENGTH = 100;
 
@@ -111,7 +112,7 @@ export function UploadModal({ onClose, onUpload, preSelectedProjectId }: UploadM
       return 'Only .webm, .mp3, and .wav files are supported.';
     }
     if (selectedFile.size > MAX_FILE_SIZE) {
-      return 'File size exceeds 200 MB limit.';
+      return `Audio is limited to ${MAX_AUDIO_MINUTES} minutes (max ${MAX_FILE_SIZE / (1024 * 1024)} MB). Please trim your recording.`;
     }
     return null;
   }
@@ -270,7 +271,7 @@ export function UploadModal({ onClose, onUpload, preSelectedProjectId }: UploadM
                   </div>
                   <p className="text-sm font-medium text-gray-700">Drop your audio file here</p>
                   <p className="text-xs text-gray-500 mt-1">or <span className="text-primary font-medium">click to browse</span></p>
-                  <p className="text-xs text-gray-400 mt-2">.webm, .mp3, .wav up to 200 MB</p>
+                  <p className="text-xs text-gray-400 mt-2">.webm, .mp3, .wav — max {MAX_AUDIO_MINUTES} minutes</p>
                 </div>
               )}
               <input
