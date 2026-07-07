@@ -7,17 +7,42 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MeetScribe.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class Intial_Script : Migration
+    public partial class Intial_script : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateTable(
+                name: "Users",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    CognitoSub = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    Name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    PictureUrl = table.Column<string>(type: "character varying(1024)", maxLength: 1024, nullable: true),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
+                    UploadLimit = table.Column<int>(type: "integer", nullable: false, defaultValue: 5),
+                    UploadsUsed = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
+                    QuotaResetAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    IsAdmin = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    AdminNotes = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    LastLoginAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Users", x => x.Id);
+                });
+
             migrationBuilder.CreateTable(
                 name: "IntegrationSettings",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    UserId = table.Column<int>(type: "integer", nullable: false),
                     Provider = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     SettingsJson = table.Column<string>(type: "jsonb", nullable: false),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
@@ -27,6 +52,12 @@ namespace MeetScribe.Data.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_IntegrationSettings", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_IntegrationSettings_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -35,6 +66,7 @@ namespace MeetScribe.Data.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    UserId = table.Column<int>(type: "integer", nullable: false),
                     Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     LinkedProvider = table.Column<string>(type: "text", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
@@ -42,6 +74,12 @@ namespace MeetScribe.Data.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Projects", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Projects_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -50,6 +88,7 @@ namespace MeetScribe.Data.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    UserId = table.Column<int>(type: "integer", nullable: false),
                     Name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     Description = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     ProjectId = table.Column<int>(type: "integer", nullable: true),
@@ -75,6 +114,12 @@ namespace MeetScribe.Data.Migrations
                         principalTable: "Projects",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.SetNull);
+                    table.ForeignKey(
+                        name: "FK_Meetings_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -116,6 +161,11 @@ namespace MeetScribe.Data.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_IntegrationSettings_UserId",
+                table: "IntegrationSettings",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Meetings_CreatedAt",
                 table: "Meetings",
                 column: "CreatedAt");
@@ -131,10 +181,31 @@ namespace MeetScribe.Data.Migrations
                 column: "Status");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Meetings_UserId",
+                table: "Meetings",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Projects_Name",
                 table: "Projects",
                 column: "Name",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Projects_UserId",
+                table: "Projects",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_CognitoSub",
+                table: "Users",
+                column: "CognitoSub",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_Email",
+                table: "Users",
+                column: "Email");
         }
 
         /// <inheritdoc />
@@ -151,6 +222,9 @@ namespace MeetScribe.Data.Migrations
 
             migrationBuilder.DropTable(
                 name: "Projects");
+
+            migrationBuilder.DropTable(
+                name: "Users");
         }
     }
 }
