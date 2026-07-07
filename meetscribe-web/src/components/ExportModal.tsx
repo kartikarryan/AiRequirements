@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ExtractionResult } from '../types/extraction';
 import { getProviderProjects, getProviderIterations } from '../services/integrationService';
-import { API_BASE_URL } from '../services/apiClient';
+import { api } from '../services/apiClient';
 
 const EXPORTABLE_SECTIONS: Record<string, string> = {
   action_items: 'Task',
@@ -62,7 +62,7 @@ export function ExportModal({ result, provider, meetingName, meetingId, onClose 
 
       // Load previously exported tickets for this meeting
       if (meetingId) {
-        const response = await fetch(`${API_BASE_URL}/api/integrations/${provider}/exported/${meetingId}`);
+        const response = await api.get(`/api/integrations/${provider}/exported/${meetingId}`);
         if (response.ok) {
           const body = await response.json();
           const exported: { title: string; externalTicketId: number; externalTicketUrl: string; project: string; iterationPath: string | null; workItemType: string }[] = body?.data || [];
@@ -105,8 +105,14 @@ export function ExportModal({ result, provider, meetingName, meetingId, onClose 
   useEffect(() => {
     if (selectedProject) {
       getProviderIterations(provider, selectedProject).then(setIterations);
-      fetch(`${API_BASE_URL}/api/integrations/${provider}/workitemtypes?project=${encodeURIComponent(selectedProject)}`)
-        .then(res => res.ok ? res.json() : null)
+      api.get(`/api/integrations/${provider}/workitemtypes?project=${encodeURIComponent(selectedProject)}`)
+        .then(res => {
+          if (res.status === 401 || res.status === 403) {
+            setError('Your PAT token lacks permission to access this project. Update your connection in Settings.');
+            return null;
+          }
+          return res.ok ? res.json() : null;
+        })
         .then(body => {
           if (body?.data) {
             const types: string[] = body.data;
@@ -124,7 +130,7 @@ export function ExportModal({ result, provider, meetingName, meetingId, onClose 
             }));
           }
         })
-        .catch(() => {});
+        .catch(() => setError('Failed to load work item types. Check your connection.'));
     }
   }, [selectedProject]);
 
@@ -208,20 +214,24 @@ export function ExportModal({ result, provider, meetingName, meetingId, onClose 
     });
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/integrations/${provider}/export/batch`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          project: selectedProject,
-          iterationPath: selectedIteration || undefined,
-          meetingId: meetingId || undefined,
-          force,
-          items: batchItems,
-        }),
+      const response = await api.post(`/api/integrations/${provider}/export/batch`, {
+        project: selectedProject,
+        iterationPath: selectedIteration || undefined,
+        meetingId: meetingId || undefined,
+        force,
+        items: batchItems,
       });
 
       if (!response.ok) {
-        setError('Export failed. Check your connection.');
+        const errBody = await response.json().catch(() => null);
+        const errMsg = errBody?.message || errBody?.data?.message;
+        if (response.status === 401) {
+          setError('Access denied. Your PAT token may have expired or lacks "Work Items (Read & Write)" permission. Update your connection in Settings.');
+        } else if (response.status === 403) {
+          setError('Permission denied. Your PAT does not have access to push work items to this project. Check your token scopes in Azure DevOps.');
+        } else {
+          setError(errMsg || 'Export failed. Please check your connection and try again.');
+        }
         setItems(prev => prev.map(it => it.status === 'creating' ? { ...it, status: 'failed' as const } : it));
         setIsExporting(false);
         return;
