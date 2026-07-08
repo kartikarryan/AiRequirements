@@ -5,8 +5,29 @@ using MeetScribe.Api;
 using MeetScribe.Api.Middleware;
 using MeetScribe.Api.Services;
 using MeetScribe.Data;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Serilog — daily log files, auto-delete after 5 days
+var logPath = OperatingSystem.IsLinux()
+    ? "/var/log/meetscribe/meetscribe-.log"
+    : Path.Combine(AppContext.BaseDirectory, "logs", "meetscribe-.log");
+
+builder.Host.UseSerilog((context, config) =>
+{
+    config
+        .MinimumLevel.Information()
+        .MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Warning)
+        .WriteTo.Console(outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss}] [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+        .WriteTo.File(
+            path: logPath,
+            rollingInterval: RollingInterval.Day,
+            retainedFileCountLimit: 5,
+            outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss}] [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}",
+            shared: true
+        );
+});
 
 // Increase limits for large audio file uploads (200 MB, 10 min timeout)
 builder.WebHost.ConfigureKestrel(options =>
@@ -98,9 +119,21 @@ builder.Services.AddMeetScribeData(builder.Configuration);
 
 var app = builder.Build();
 
-// Swagger
-app.UseSwagger();
-app.UseSwaggerUI();
+// Swagger — Development only, or via secret path in production
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+else
+{
+    app.UseSwagger(c => c.RouteTemplate = "internal-docs/{documentName}/swagger.json");
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/internal-docs/v1/swagger.json", "MeetScribe API");
+        c.RoutePrefix = "internal-docs";
+    });
+}
 
 // Enable CORS
 app.UseCors();
